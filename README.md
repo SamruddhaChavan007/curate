@@ -107,7 +107,9 @@ app/src/main/java/com/example/curate/
 |-- presentation/
 |   |-- components/
 |   |-- detail/
+|   |-- discover/
 |   |-- home/
+|   |-- library/
 |   |-- main/
 |   `-- navigation/
 `-- ui/
@@ -154,6 +156,8 @@ Composables:
 - Shared element transitions use stable keys: `wallpaper-image-${id}`.
 - The detail screen loads `fullUrl` while using `previewUrl` as the memory-cache placeholder.
 - The top search component uses `DockedSearchBar` and applies status bar insets so it does not overlap system icons.
+- The home grid starts below the overlaid search area by using a scrollable top spacer, then wallpapers can scroll behind the search chrome.
+- The bottom navigation uses icon brightness for selection, with no selected-item background indicator.
 
 ## Logging
 
