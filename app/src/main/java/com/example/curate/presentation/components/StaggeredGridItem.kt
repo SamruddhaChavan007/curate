@@ -1,0 +1,66 @@
+package com.example.curate.presentation.components
+
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+
+@Composable
+fun StaggeredGridItem(
+    itemKey: String,
+    index: Int,
+    shouldAnimate: Boolean,
+    onAnimationScheduled: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    var entered by remember(itemKey) { mutableStateOf(!shouldAnimate) }
+    val offsetPx = with(LocalDensity.current) { 32.dp.toPx() }
+    val alpha by animateFloatAsState(
+        targetValue = if (entered) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 360,
+            easing = LinearOutSlowInEasing
+        ),
+        label = "gridItemAlpha"
+    )
+    val progress by animateFloatAsState(
+        targetValue = if (entered) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 420,
+            easing = FastOutSlowInEasing
+        ),
+        label = "gridItemProgress"
+    )
+
+    LaunchedEffect(itemKey, shouldAnimate) {
+        if (shouldAnimate) {
+            onAnimationScheduled(itemKey)
+            delay((index % 12) * 55L)
+        }
+        entered = true
+    }
+
+    Box(
+        modifier = modifier.graphicsLayer {
+            this.alpha = alpha
+            translationY = (1f - progress) * offsetPx
+            scaleX = 0.92f + (0.08f * progress)
+            scaleY = 0.92f + (0.08f * progress)
+        }
+    ) {
+        content()
+    }
+}
