@@ -23,7 +23,7 @@ fun CurateBottomNavigationBar(
                 selected = selected,
                 onClick = { onDestinationClick(destination) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.White,
+                    selectedIconColor = MaterialTheme.colorScheme.onSurface,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                     indicatorColor = Color.Transparent
                 ),

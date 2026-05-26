@@ -5,6 +5,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.example.curate.data.paging.WallpaperPagingSource
 import com.example.curate.data.remote.unsplash.UnsplashApi
+import com.example.curate.data.remote.unsplash.mapper.toDomain
 import com.example.curate.domain.model.Wallpaper
 import com.example.curate.domain.repository.WallpaperRepository
 import javax.inject.Inject
@@ -28,6 +29,10 @@ class WallpaperRepositoryImpl @Inject constructor(
                 )
             }
         ).flow
+    }
+
+    override suspend fun getWallpaper(id: String): Wallpaper {
+        return api.getPhoto(id).toDomain()
     }
 
     private companion object {

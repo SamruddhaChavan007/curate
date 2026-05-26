@@ -2,6 +2,7 @@ package com.example.curate.data.remote.unsplash
 
 import com.example.curate.core.config.AppConfig
 import com.example.curate.data.remote.unsplash.dto.UnsplashSearchResponseDto
+import com.example.curate.data.remote.unsplash.dto.UnsplashPhotoDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -32,7 +33,18 @@ class UnsplashApi @Inject constructor(
         }.body()
     }
 
+    suspend fun getPhoto(id: String): UnsplashPhotoDto {
+        check(AppConfig.unsplashAccessKey.isNotBlank()) {
+            "UNSPLASH_ACCESS_KEY is missing. Set it in local.properties."
+        }
+
+        return httpClient.get("$UNSPLASH_PHOTOS_URL/$id") {
+            header("Authorization", "Client-ID ${AppConfig.unsplashAccessKey}")
+        }.body()
+    }
+
     private companion object {
         const val UNSPLASH_SEARCH_PHOTOS_URL = "https://api.unsplash.com/search/photos"
+        const val UNSPLASH_PHOTOS_URL = "https://api.unsplash.com/photos"
     }
 }

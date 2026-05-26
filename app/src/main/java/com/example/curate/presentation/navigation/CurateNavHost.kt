@@ -9,10 +9,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -28,10 +27,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.curate.presentation.components.CurateBottomNavigationBar
-import com.example.curate.presentation.detail.WallpaperDetailScreen
+import com.example.curate.presentation.detail.WallpaperDetailRoute
 import com.example.curate.presentation.discover.DiscoverRoute
 import com.example.curate.presentation.home.HomeRoute
 import com.example.curate.presentation.home.HomeViewModel
+import com.example.curate.presentation.home.WallpaperUiModel
 import com.example.curate.presentation.library.LibraryRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -40,7 +40,7 @@ fun CurateNavHost(
     homeViewModel: HomeViewModel
 ) {
     val navController = rememberNavController()
-    val selectedWallpaper by homeViewModel.selectedWallpaper.collectAsState()
+    var transitionSeedWallpaper by remember { mutableStateOf<WallpaperUiModel?>(null) }
 
     SharedTransitionLayout {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -64,6 +64,12 @@ fun CurateNavHost(
         LaunchedEffect(currentDestination?.route) {
             if (showBottomBar) {
                 bottomBarVisibleByScroll = true
+            }
+        }
+
+        LaunchedEffect(currentDestination?.route) {
+            if (currentDestination?.route != Routes.WALLPAPER_DETAIL) {
+                transitionSeedWallpaper = null
             }
         }
 
@@ -103,7 +109,7 @@ fun CurateNavHost(
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this,
                         onWallpaperClick = { wallpaper ->
-                            homeViewModel.selectWallpaper(wallpaper)
+                            transitionSeedWallpaper = wallpaper
                             navController.navigate(Routes.wallpaperDetail(wallpaper.id))
                         }
                     )
@@ -123,8 +129,8 @@ fun CurateNavHost(
                         type = NavType.StringType
                     })
                 ) {
-                    WallpaperDetailScreen(
-                        wallpaper = selectedWallpaper,
+                    WallpaperDetailRoute(
+                        transitionSeedWallpaper = transitionSeedWallpaper,
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this,
                         onBackClick = navController::navigateUp

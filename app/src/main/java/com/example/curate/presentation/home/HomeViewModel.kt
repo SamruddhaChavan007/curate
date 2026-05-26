@@ -13,19 +13,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     getWallpaperFeed: GetWallpaperFeedUseCase
 ) : ViewModel() {
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
     val wallpapers: Flow<PagingData<WallpaperUiModel>> = getWallpaperFeed()
         .map { pagingData -> pagingData.map { wallpaper -> wallpaper.toUiModel() } }
         .cachedIn(viewModelScope)
 
-    private val _selectedWallpaper = MutableStateFlow<WallpaperUiModel?>(null)
-    val selectedWallpaper: StateFlow<WallpaperUiModel?> = _selectedWallpaper.asStateFlow()
-
-    fun selectWallpaper(wallpaper: WallpaperUiModel) {
-        _selectedWallpaper.value = wallpaper
+    fun onScrollDirectionChanged(direction: HomeScrollDirection) {
+        val shouldShowTopBar = direction == HomeScrollDirection.Up
+        _uiState.update { currentState ->
+            if (currentState.isTopBarVisible == shouldShowTopBar) {
+                currentState
+            } else {
+                currentState.copy(isTopBarVisible = shouldShowTopBar)
+            }
+        }
     }
 }

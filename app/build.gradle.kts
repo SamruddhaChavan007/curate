@@ -1,8 +1,8 @@
+import com.android.build.api.dsl.ApplicationExtension
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -24,7 +24,7 @@ fun String.asBuildConfigString(): String {
     return "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
 }
 
-android {
+extensions.configure<ApplicationExtension> {
     namespace = "com.example.curate"
     compileSdk = 37
 
@@ -130,6 +130,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.material)
     implementation(libs.timber)
@@ -141,6 +142,8 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    add("devImplementation", libs.androidx.compose.ui.test.manifest)
+    add("devImplementation", libs.androidx.compose.ui.tooling)
 
     implementation(platform(libs.supabase.bom))
     implementation(libs.ktor.client.okhttp)
