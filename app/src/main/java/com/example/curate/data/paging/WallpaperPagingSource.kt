@@ -11,6 +11,8 @@ class WallpaperPagingSource(
     private val api: UnsplashApi,
     private val query: String
 ) : PagingSource<Int, Wallpaper>() {
+    private val deduplicator = WallpaperDeduplicator()
+
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Wallpaper> {
         val page = params.key ?: FIRST_PAGE
 
@@ -21,9 +23,15 @@ class WallpaperPagingSource(
                 perPage = params.loadSize.coerceAtMost(MAX_PAGE_SIZE)
             )
             val wallpapers = response.results.map { it.toDomain() }
+            val uniqueWallpapers = deduplicator.filterUnique(wallpapers)
+            val duplicateCount = wallpapers.size - uniqueWallpapers.size
+
+            if (duplicateCount > 0) {
+                Timber.d("Dropped %d duplicate wallpapers from page %d", duplicateCount, page)
+            }
 
             LoadResult.Page(
-                data = wallpapers,
+                data = uniqueWallpapers,
                 prevKey = if (page == FIRST_PAGE) null else page - 1,
                 nextKey = if (page >= response.totalPages || wallpapers.isEmpty()) null else page + 1
             )

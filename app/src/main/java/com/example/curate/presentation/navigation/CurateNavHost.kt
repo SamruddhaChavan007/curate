@@ -33,6 +33,7 @@ import com.example.curate.presentation.home.HomeRoute
 import com.example.curate.presentation.home.HomeViewModel
 import com.example.curate.presentation.home.WallpaperUiModel
 import com.example.curate.presentation.library.LibraryRoute
+import com.example.curate.presentation.search.SearchRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -117,6 +118,10 @@ fun CurateNavHost(
 
                 composable(Routes.DISCOVER) {
                     DiscoverRoute()
+                }
+
+                composable(Routes.SEARCH) {
+                    SearchRoute()
                 }
 
                 composable(Routes.LIBRARY) {

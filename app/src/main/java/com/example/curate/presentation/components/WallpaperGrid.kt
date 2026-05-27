@@ -27,7 +27,10 @@ fun WallpaperGrid(
     onWallpaperClick: (WallpaperUiModel) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier.Companion,
-    gridState: LazyStaggeredGridState = rememberLazyStaggeredGridState()
+    gridState: LazyStaggeredGridState = rememberLazyStaggeredGridState(),
+    shouldAnimateItems: Boolean = false,
+    animatedItemIds: Set<String> = emptySet(),
+    onItemAnimationCompleted: (String) -> Unit = {}
 ) {
     WallpaperImagePrefetcher(
         wallpapers = wallpapers,
@@ -48,12 +51,19 @@ fun WallpaperGrid(
         ) { index ->
             val wallpaper = wallpapers[index]
             if (wallpaper != null) {
-                WallpaperCard(
-                    wallpaper = wallpaper,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    onClick = { onWallpaperClick(wallpaper) }
-                )
+                StaggeredGridItem(
+                    itemKey = wallpaper.id,
+                    index = index,
+                    shouldAnimate = shouldAnimateItems && wallpaper.id !in animatedItemIds,
+                    onAnimationCompleted = onItemAnimationCompleted
+                ) {
+                    WallpaperCard(
+                        wallpaper = wallpaper,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        onClick = { onWallpaperClick(wallpaper) }
+                    )
+                }
             }
         }
 

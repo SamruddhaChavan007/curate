@@ -28,11 +28,30 @@ class HomeViewModel @Inject constructor(
 
     fun onScrollDirectionChanged(direction: HomeScrollDirection) {
         val shouldShowTopBar = direction == HomeScrollDirection.Up
+        val shouldAnimateGridItems = direction == HomeScrollDirection.Down
         _uiState.update { currentState ->
-            if (currentState.isTopBarVisible == shouldShowTopBar) {
+            if (
+                currentState.isTopBarVisible == shouldShowTopBar &&
+                currentState.shouldAnimateGridItems == shouldAnimateGridItems
+            ) {
                 currentState
             } else {
-                currentState.copy(isTopBarVisible = shouldShowTopBar)
+                currentState.copy(
+                    isTopBarVisible = shouldShowTopBar,
+                    shouldAnimateGridItems = shouldAnimateGridItems
+                )
+            }
+        }
+    }
+
+    fun onGridItemAnimationCompleted(itemId: String) {
+        _uiState.update { currentState ->
+            if (itemId in currentState.animatedGridItemIds) {
+                currentState
+            } else {
+                currentState.copy(
+                    animatedGridItemIds = currentState.animatedGridItemIds + itemId
+                )
             }
         }
     }

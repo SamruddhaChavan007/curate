@@ -6,7 +6,7 @@ The app currently focuses on a smooth wallpaper feed experience:
 
 - Unsplash-powered wallpaper discovery.
 - Infinite scrolling with Paging 3.
-- Staggered image grid with subtle expressive item animations.
+- Staggered image grid with subtle expressive item animations on fresh open and downward scroll.
 - Coil image loading and near-viewport image prefetching.
 - Shared element transitions from grid images into the detail screen.
 - Detail image loading that uses the cached preview image while the full image loads.
@@ -111,6 +111,7 @@ app/src/main/java/com/example/curate/
 |   |-- home/
 |   |-- library/
 |   |-- main/
+|   |-- search/
 |   `-- navigation/
 `-- ui/
     `-- theme/
@@ -128,12 +129,14 @@ ViewModels:
 
 - Own UI state and user intent functions.
 - Depend on domain use cases.
-- Do not own `Context`, Coil `ImageLoader`, animation state, scroll state, or Compose-specific behavior.
+- Do not own `Context`, Coil `ImageLoader`, scroll state, or Compose-specific behavior.
+- May own presentation policy state, such as whether newly visible grid items should animate and which wallpaper IDs have already completed their one-shot entrance animation.
 
 Composables:
 
 - Render state and call callbacks.
-- Own visual behavior such as shared element transitions, staggered animations, and Coil image requests.
+- Own visual rendering mechanics such as shared element transitions, staggered item transforms, and Coil image requests.
+- Report UI events, such as scroll direction and completed item entrance animations, back to the relevant ViewModel.
 - May do presentation-only image prefetching when it is tied to what the UI is about to display.
 
 ### Domain
@@ -152,6 +155,9 @@ Composables:
 
 - The home screen uses a two-column `LazyVerticalStaggeredGrid`.
 - Grid items animate in through a reusable `StaggeredGridItem`.
+- The initial feed animates on fresh app open.
+- New grid items animate only while scrolling down.
+- Items do not reanimate after their wallpaper ID has been recorded in `HomeUiState.animatedGridItemIds`.
 - Visible and near-future wallpaper previews are prefetched with `WallpaperImagePrefetcher`.
 - Shared element transitions use stable keys: `wallpaper-image-${id}`.
 - The detail screen loads `fullUrl` while using `previewUrl` as the memory-cache placeholder.

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,7 +48,6 @@ import com.example.curate.presentation.components.CurateTopBar
 import com.example.curate.presentation.components.WallpaperGrid
 
 private val WallpaperGridEdgePadding = 12.dp
-private val HomeTopBarFallbackHeight = 64.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -68,6 +68,7 @@ fun HomeRoute(
         animatedVisibilityScope = animatedVisibilityScope,
         onWallpaperClick = onWallpaperClick,
         onScrollDirectionChanged = viewModel::onScrollDirectionChanged,
+        onGridItemAnimationCompleted = viewModel::onGridItemAnimationCompleted,
         modifier = modifier
     )
 }
@@ -81,6 +82,7 @@ fun HomeScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     onWallpaperClick: (WallpaperUiModel) -> Unit,
     onScrollDirectionChanged: (HomeScrollDirection) -> Unit,
+    onGridItemAnimationCompleted: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val gridState = rememberLazyStaggeredGridState()
@@ -90,7 +92,7 @@ fun HomeScreen(
     val topBarHeight = if (topBarHeightPx > 0) {
         with(density) { topBarHeightPx.toDp() }
     } else {
-        HomeTopBarFallbackHeight
+        TopAppBarDefaults.TopAppBarExpandedHeight
     }
     val topBarOverlayHeight = statusBarTopPadding + topBarHeight
     val animatedGridViewportTopPadding by animateDpAsState(
@@ -144,7 +146,10 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(top = animatedGridViewportTopPadding),
-                        gridState = gridState
+                        gridState = gridState,
+                        shouldAnimateItems = uiState.shouldAnimateGridItems,
+                        animatedItemIds = uiState.animatedGridItemIds,
+                        onItemAnimationCompleted = onGridItemAnimationCompleted
                     )
 
                     androidx.compose.animation.AnimatedVisibility(

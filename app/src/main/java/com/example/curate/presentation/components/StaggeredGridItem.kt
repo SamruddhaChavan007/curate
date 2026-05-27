@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -22,11 +23,13 @@ fun StaggeredGridItem(
     itemKey: String,
     index: Int,
     shouldAnimate: Boolean,
-    onAnimationScheduled: (String) -> Unit,
+    onAnimationCompleted: (String) -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     var entered by remember(itemKey) { mutableStateOf(!shouldAnimate) }
+    val shouldAnimateOnEntry = remember(itemKey) { shouldAnimate }
+    val currentOnAnimationCompleted by rememberUpdatedState(onAnimationCompleted)
     val offsetPx = with(LocalDensity.current) { 32.dp.toPx() }
     val alpha by animateFloatAsState(
         targetValue = if (entered) 1f else 0f,
@@ -45,12 +48,14 @@ fun StaggeredGridItem(
         label = "gridItemProgress"
     )
 
-    LaunchedEffect(itemKey, shouldAnimate) {
-        if (shouldAnimate) {
-            onAnimationScheduled(itemKey)
+    LaunchedEffect(itemKey) {
+        if (shouldAnimateOnEntry) {
             delay((index % 12) * 55L)
         }
         entered = true
+        if (shouldAnimateOnEntry) {
+            currentOnAnimationCompleted(itemKey)
+        }
     }
 
     Box(
