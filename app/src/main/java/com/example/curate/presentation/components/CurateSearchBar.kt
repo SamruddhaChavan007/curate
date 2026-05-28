@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,29 +18,29 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.curate.ui.theme.CurateTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CurateSearchBar() {
-
-    var text by remember { mutableStateOf("") }
-
+fun CurateSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    onFocusChange: (Boolean) -> Unit = {}
+) {
     TextField(
-        value = text,
-        onValueChange = { text = it },
-        modifier = Modifier
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(10.dp),
+            .padding(10.dp)
+            .onFocusChanged { onFocusChange(it.isFocused) },
         shape = RoundedCornerShape(30.dp),
         placeholder = { Text("Search...") },
         colors = TextFieldDefaults.colors(
@@ -54,13 +55,24 @@ fun CurateSearchBar() {
             )
         },
         trailingIcon = {
-            IconButton(
-                onClick = { }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Mic,
-                    contentDescription = "Microphone"
-                )
+            if (query.isNotEmpty()) {
+                IconButton(
+                    onClick = { onQueryChange("") }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = "Clear search"
+                    )
+                }
+            } else {
+                IconButton(
+                    onClick = { }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = "Microphone"
+                    )
+                }
             }
         }
     )
@@ -81,7 +93,12 @@ fun CurateSearchBar() {
 fun PreviewCurateSearchBar() {
     CurateTheme {
         Scaffold(
-            topBar = { CurateSearchBar() }
+            topBar = {
+                CurateSearchBar(
+                    query = "",
+                    onQueryChange = {}
+                )
+            }
         ) { innerPadding ->
             Box(
                 modifier = Modifier

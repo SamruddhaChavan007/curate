@@ -6,9 +6,14 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 @HiltViewModel
 class SearchViewModel @Inject constructor() : ViewModel() {
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(query = query) }
+    }
 }

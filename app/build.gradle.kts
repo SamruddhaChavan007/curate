@@ -153,4 +153,5 @@ dependencies {
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.realtime)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation("androidx.core:core-splashscreen:1.0.0")
 }
