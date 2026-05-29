@@ -6,10 +6,16 @@ sealed interface WallpaperDetailUiState {
     data object Loading : WallpaperDetailUiState
 
     data class Content(
-        val wallpaper: WallpaperUiModel
+        val wallpaper: WallpaperUiModel,
+        val backButtonTint: BackButtonTint = BackButtonTint.Light
     ) : WallpaperDetailUiState
 
     data class Error(
         val message: String
     ) : WallpaperDetailUiState
+}
+
+enum class BackButtonTint {
+    Light,
+    Dark
 }

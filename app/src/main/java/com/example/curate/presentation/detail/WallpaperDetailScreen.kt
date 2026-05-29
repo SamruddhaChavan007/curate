@@ -1,5 +1,6 @@
 package com.example.curate.presentation.detail
 
+import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -34,12 +35,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.bitmapConfig
 import com.example.curate.presentation.components.CurateWallpaperImage
 import com.example.curate.presentation.components.CurateLoadingContent
 import com.example.curate.presentation.components.CurateMessageContent
@@ -59,6 +64,7 @@ fun WallpaperDetailRoute(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val loadedWallpaper = (uiState as? WallpaperDetailUiState.Content)?.wallpaper
+    val backButtonTint = (uiState as? WallpaperDetailUiState.Content)?.backButtonTint ?: BackButtonTint.Light
     var sharedWallpaper by remember {
         mutableStateOf(transitionSeedWallpaper ?: loadedWallpaper)
     }
@@ -75,7 +81,9 @@ fun WallpaperDetailRoute(
             wallpaper = wallpaper,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
+            backButtonTint = backButtonTint,
             onBackClick = onBackClick,
+            onWallpaperImageReady = viewModel::onWallpaperImageReady,
             modifier = modifier
         )
         return
@@ -105,7 +113,9 @@ fun WallpaperDetailScreen(
     wallpaper: WallpaperUiModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    backButtonTint: BackButtonTint,
     onBackClick: () -> Unit,
+    onWallpaperImageReady: (String, Bitmap, ImageBounds, ImageBounds) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val transitionShape = RoundedCornerShape(8.dp)
@@ -114,8 +124,20 @@ fun WallpaperDetailScreen(
     val dismissThresholdPx = with(density) { DragDismissThreshold.toPx() }
     val dragOffsetY = remember { Animatable(0f) }
     var isDismissRequested by remember { mutableStateOf(false) }
+    var loadedBitmap by remember(wallpaper.id) { mutableStateOf<Bitmap?>(null) }
+    var imageBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
+    var buttonBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
     val dismissProgress = (dragOffsetY.value / dismissThresholdPx).coerceIn(0f, 1f)
     val contentScale = 1f - (dismissProgress * DragDismissScaleRange)
+
+    LaunchedEffect(wallpaper.id, loadedBitmap, imageBounds, buttonBounds) {
+        val bitmap = loadedBitmap
+        val image = imageBounds
+        val button = buttonBounds
+        if (bitmap != null && image != null && button != null) {
+            onWallpaperImageReady(wallpaper.id, bitmap, image, button)
+        }
+    }
 
     Box(
         modifier = modifier
@@ -165,14 +187,20 @@ fun WallpaperDetailScreen(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(wallpaper.fullUrl)
                     .placeholderMemoryCacheKey(wallpaper.previewUrl)
+                    .allowHardware(false)
+                    .bitmapConfig(Bitmap.Config.ARGB_8888)
                     .build(),
                 contentDescription = "Wallpaper by ${wallpaper.photographerName}",
                 blurHash = wallpaper.blurHash,
                 contentScale = ContentScale.Crop,
                 fallbackColor = Color.Black,
                 fadeInImage = false,
+                onBitmapLoaded = { loadedBitmap = it },
                 modifier = Modifier
                     .fillMaxSize()
+                    .onGloballyPositioned { coordinates ->
+                        imageBounds = coordinates.toImageBounds()
+                    }
                     .offset { IntOffset(x = 0, y = dragOffsetY.value.roundToInt()) }
                     .sharedElement(
                         sharedContentState = rememberSharedContentState(key = "wallpaper-image-${wallpaper.id}"),
@@ -192,6 +220,9 @@ fun WallpaperDetailScreen(
                 .align(Alignment.TopStart)
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(start = 8.dp, top = 8.dp)
+                .onGloballyPositioned { coordinates ->
+                    buttonBounds = coordinates.toImageBounds()
+                }
                 .graphicsLayer {
                     alpha = if (isDismissRequested) 0f else 1f - dismissProgress
                 }
@@ -199,10 +230,27 @@ fun WallpaperDetailScreen(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.Gray
+                tint = backButtonTint.toColor()
             )
         }
     }
+}
+
+private fun BackButtonTint.toColor(): Color {
+    return when (this) {
+        BackButtonTint.Light -> Color.White
+        BackButtonTint.Dark -> Color.Black
+    }
+}
+
+private fun androidx.compose.ui.layout.LayoutCoordinates.toImageBounds(): ImageBounds {
+    val position = positionInRoot()
+    return ImageBounds(
+        left = position.x.roundToInt(),
+        top = position.y.roundToInt(),
+        right = (position.x + size.width).roundToInt(),
+        bottom = (position.y + size.height).roundToInt()
+    )
 }
 
 private val DragDismissThreshold = 140.dp
