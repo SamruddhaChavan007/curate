@@ -61,6 +61,10 @@ fun HomeRoute(
     val wallpapers = viewModel.wallpapers.collectAsLazyPagingItems()
     val uiState by viewModel.uiState.collectAsState()
 
+    LaunchedEffect(wallpapers.loadState.refresh) {
+        viewModel.onInitialRefreshStateChanged(wallpapers.loadState.refresh)
+    }
+
     HomeScreen(
         wallpapers = wallpapers,
         uiState = uiState,

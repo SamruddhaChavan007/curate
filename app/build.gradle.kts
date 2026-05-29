@@ -41,61 +41,49 @@ extensions.configure<ApplicationExtension> {
     buildTypes {
         debug {
             buildConfigField("boolean", "LOGS_ENABLED", "true")
-            buildConfigField("String", "BASE_URL", localProperty("DEV_BASE_URL").asBuildConfigString())
-            buildConfigField("String", "SUPABASE_URL", localProperty("DEV_BASE_URL").asBuildConfigString())
-            buildConfigField("String", "SUPABASE_ANON_KEY", localProperty("SUPABASE_ANON_KEY").asBuildConfigString())
-            buildConfigField("String", "UNSPLASH_ACCESS_KEY", localProperty("UNSPLASH_ACCESS_KEY").asBuildConfigString())
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
 
         release {
             buildConfigField("boolean", "LOGS_ENABLED", "false")
-            buildConfigField("String", "BASE_URL", localProperty("PRODUCTION_BASE_URL").asBuildConfigString())
-            buildConfigField("String", "SUPABASE_URL", localProperty("PRODUCTION_BASE_URL").asBuildConfigString())
-            buildConfigField("String", "SUPABASE_ANON_KEY", localProperty("SUPABASE_ANON_KEY").asBuildConfigString())
-            buildConfigField("String", "UNSPLASH_ACCESS_KEY", localProperty("UNSPLASH_ACCESS_KEY").asBuildConfigString())
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+    }
 
+    flavorDimensions += "environment"
+
+    productFlavors {
         create("dev") {
-            initWith(getByName("debug"))
-            buildConfigField("boolean", "LOGS_ENABLED", "true")
+            dimension = "environment"
             buildConfigField("String", "BASE_URL", localProperty("DEV_BASE_URL").asBuildConfigString())
             buildConfigField("String", "SUPABASE_URL", localProperty("DEV_BASE_URL").asBuildConfigString())
             buildConfigField("String", "SUPABASE_ANON_KEY", localProperty("SUPABASE_ANON_KEY").asBuildConfigString())
             buildConfigField("String", "UNSPLASH_ACCESS_KEY", localProperty("UNSPLASH_ACCESS_KEY").asBuildConfigString())
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            matchingFallbacks += listOf("debug")
         }
 
         create("staging") {
-            initWith(getByName("debug"))
-            buildConfigField("boolean", "LOGS_ENABLED", "true")
+            dimension = "environment"
             buildConfigField("String", "BASE_URL", localProperty("STAGING_BASE_URL").asBuildConfigString())
             buildConfigField("String", "SUPABASE_URL", localProperty("STAGING_BASE_URL").asBuildConfigString())
             buildConfigField("String", "SUPABASE_ANON_KEY", localProperty("SUPABASE_ANON_KEY").asBuildConfigString())
             buildConfigField("String", "UNSPLASH_ACCESS_KEY", localProperty("UNSPLASH_ACCESS_KEY").asBuildConfigString())
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            matchingFallbacks += listOf("debug")
         }
 
         create("production") {
-            initWith(getByName("release"))
-            buildConfigField("boolean", "LOGS_ENABLED", "false")
+            dimension = "environment"
             buildConfigField("String", "BASE_URL", localProperty("PRODUCTION_BASE_URL").asBuildConfigString())
             buildConfigField("String", "SUPABASE_URL", localProperty("PRODUCTION_BASE_URL").asBuildConfigString())
             buildConfigField("String", "SUPABASE_ANON_KEY", localProperty("SUPABASE_ANON_KEY").asBuildConfigString())
             buildConfigField("String", "UNSPLASH_ACCESS_KEY", localProperty("UNSPLASH_ACCESS_KEY").asBuildConfigString())
-            isDebuggable = false
-            isMinifyEnabled = true
-            matchingFallbacks += listOf("release")
         }
     }
     compileOptions {
@@ -142,8 +130,6 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    add("devImplementation", libs.androidx.compose.ui.test.manifest)
-    add("devImplementation", libs.androidx.compose.ui.tooling)
 
     implementation(platform(libs.supabase.bom))
     implementation(libs.ktor.client.okhttp)

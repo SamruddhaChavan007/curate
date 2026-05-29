@@ -2,6 +2,7 @@ package com.example.curate.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
@@ -14,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -25,6 +28,36 @@ class HomeViewModel @Inject constructor(
     val wallpapers: Flow<PagingData<WallpaperUiModel>> = getWallpaperFeed()
         .map { pagingData -> pagingData.map { wallpaper -> wallpaper.toUiModel() } }
         .cachedIn(viewModelScope)
+
+    init {
+        viewModelScope.launch {
+            delay(SPLASH_TIMEOUT_MILLIS)
+            _uiState.update { currentState ->
+                val nextStartupState = HomeStartupFeedStateReducer.fromTimeout(
+                    currentState = currentState.startupFeedState
+                )
+                if (nextStartupState == currentState.startupFeedState) {
+                    currentState
+                } else {
+                    currentState.copy(startupFeedState = nextStartupState)
+                }
+            }
+        }
+    }
+
+    fun onInitialRefreshStateChanged(loadState: LoadState) {
+        _uiState.update { currentState ->
+            val nextStartupState = HomeStartupFeedStateReducer.fromRefreshLoadState(
+                currentState = currentState.startupFeedState,
+                loadState = loadState
+            )
+            if (currentState.startupFeedState == nextStartupState) {
+                currentState
+            } else {
+                currentState.copy(startupFeedState = nextStartupState)
+            }
+        }
+    }
 
     fun onScrollDirectionChanged(direction: HomeScrollDirection) {
         val shouldShowTopBar = direction == HomeScrollDirection.Up
@@ -54,5 +87,9 @@ class HomeViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    private companion object {
+        const val SPLASH_TIMEOUT_MILLIS = 1_200L
     }
 }

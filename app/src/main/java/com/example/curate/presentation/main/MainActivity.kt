@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.curate.presentation.home.HomeViewModel
+import com.example.curate.presentation.home.StartupFeedState
 import com.example.curate.presentation.navigation.CurateNavHost
 import com.example.curate.ui.theme.CurateTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -16,7 +17,9 @@ class MainActivity : ComponentActivity() {
     private val homeViewModel: HomeViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        installSplashScreen().setKeepOnScreenCondition {
+            homeViewModel.uiState.value.startupFeedState == StartupFeedState.Loading
+        }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {

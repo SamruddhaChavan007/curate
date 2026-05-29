@@ -6,6 +6,7 @@ data class WallpaperUiModel(
     val id: String,
     val previewUrl: String,
     val fullUrl: String,
+    val blurHash: String?,
     val photographerName: String,
     val downloadLocation: String,
     val aspectRatio: Float
@@ -22,6 +23,7 @@ fun Wallpaper.toUiModel(): WallpaperUiModel {
         id = id,
         previewUrl = previewUrl,
         fullUrl = fullUrl,
+        blurHash = blurHash,
         photographerName = photographerName,
         downloadLocation = downloadLocation,
         aspectRatio = ratio.coerceIn(MIN_PORTRAIT_RATIO, MAX_PORTRAIT_RATIO)

@@ -59,31 +59,36 @@ The app maps these into `BuildConfig`:
 
 | BuildConfig field | Source |
 | --- | --- |
-| `BASE_URL` | Build-type-specific base URL |
-| `SUPABASE_URL` | Build-type-specific base URL |
+| `BASE_URL` | Environment flavor base URL |
+| `SUPABASE_URL` | Environment flavor base URL |
 | `SUPABASE_ANON_KEY` | `SUPABASE_ANON_KEY` |
 | `UNSPLASH_ACCESS_KEY` | `UNSPLASH_ACCESS_KEY` |
-| `LOGS_ENABLED` | Enabled for debug/dev/staging, disabled for release/production |
+| `LOGS_ENABLED` | Enabled for debug builds, disabled for release builds |
 
 Do not put Unsplash secret keys in the Android app. Client APKs can be inspected, so only public/client-safe keys should be exposed.
 
 ## Build Variants
 
-| Build Type | Purpose | Application ID | Logs |
+Build types control how the app is built. Product flavors control which environment the app uses.
+
+| Build Type | Purpose | Logs | Minification |
 | --- | --- | --- | --- |
-| `debug` | Local debug builds | `com.example.curate.debug` | Enabled |
-| `dev` | Local development services | `com.example.curate.dev` | Enabled |
-| `staging` | Staging services | `com.example.curate.staging` | Enabled |
-| `release` | Standard release config | `com.example.curate` | Disabled |
-| `production` | Production release config | `com.example.curate` | Disabled |
+| `debug` | Local/debuggable builds | Enabled | Disabled |
+| `release` | Release builds | Disabled | Enabled |
+
+| Environment Flavor | Purpose | Base application ID suffix |
+| --- | --- | --- |
+| `dev` | Local development services | `.dev` |
+| `staging` | Staging services | `.staging` |
+| `production` | Production services | none |
 
 Common commands:
 
 ```powershell
-.\gradlew.bat :app:assembleDebug
-.\gradlew.bat :app:assembleDev
-.\gradlew.bat :app:assembleStaging
-.\gradlew.bat :app:assembleProduction
+.\gradlew.bat :app:assembleDevDebug
+.\gradlew.bat :app:assembleStagingDebug
+.\gradlew.bat :app:assembleProductionRelease
+.\gradlew.bat :app:testDevDebugUnitTest
 ```
 
 ## Project Structure

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -30,6 +31,7 @@ import com.example.curate.presentation.components.CurateBottomNavigationBar
 import com.example.curate.presentation.detail.WallpaperDetailRoute
 import com.example.curate.presentation.discover.DiscoverRoute
 import com.example.curate.presentation.home.HomeRoute
+import com.example.curate.presentation.home.HomeScrollDirection
 import com.example.curate.presentation.home.HomeViewModel
 import com.example.curate.presentation.home.WallpaperUiModel
 import com.example.curate.presentation.library.LibraryRoute
@@ -42,6 +44,7 @@ fun CurateNavHost(
 ) {
     val navController = rememberNavController()
     var transitionSeedWallpaper by remember { mutableStateOf<WallpaperUiModel?>(null) }
+    val homeUiState by homeViewModel.uiState.collectAsState()
 
     SharedTransitionLayout {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -49,22 +52,15 @@ fun CurateNavHost(
         val showBottomBar = TopLevelDestination.entries.any { destination ->
             currentDestination?.hierarchy?.any { it.route == destination.route } == true
         }
-        var bottomBarVisibleByScroll by remember { mutableStateOf(true) }
         val bottomBarScrollConnection = remember {
             object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                     when {
-                        available.y < 0f -> bottomBarVisibleByScroll = false
-                        available.y > 0f -> bottomBarVisibleByScroll = true
+                        available.y < 0f -> homeViewModel.onScrollDirectionChanged(HomeScrollDirection.Down)
+                        available.y > 0f -> homeViewModel.onScrollDirectionChanged(HomeScrollDirection.Up)
                     }
                     return Offset.Zero
                 }
-            }
-        }
-
-        LaunchedEffect(currentDestination?.route) {
-            if (showBottomBar) {
-                bottomBarVisibleByScroll = true
             }
         }
 
@@ -79,7 +75,7 @@ fun CurateNavHost(
             bottomBar = {
                 if (showBottomBar) {
                     AnimatedVisibility(
-                        visible = bottomBarVisibleByScroll,
+                        visible = homeUiState.isTopBarVisible,
                         enter = slideInVertically(initialOffsetY = { it }),
                         exit = slideOutVertically(targetOffsetY = { it })
                     ) {
