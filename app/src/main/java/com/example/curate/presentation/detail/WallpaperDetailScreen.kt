@@ -55,11 +55,14 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun WallpaperDetailRoute(
+    wallpaperId: String,
     transitionSeedWallpaper: WallpaperUiModel?,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onBackClick: () -> Unit,
-    viewModel: WallpaperDetailViewModel = hiltViewModel(),
+    viewModel: WallpaperDetailViewModel = hiltViewModel<WallpaperDetailViewModel, WallpaperDetailViewModel.Factory>(
+        creationCallback = { factory -> factory.create(wallpaperId) }
+    ),
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()

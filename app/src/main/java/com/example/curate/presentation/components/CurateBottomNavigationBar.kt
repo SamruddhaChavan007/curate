@@ -12,12 +12,12 @@ import com.example.curate.presentation.navigation.TopLevelDestination
 
 @Composable
 fun CurateBottomNavigationBar(
-    currentDestinationRoute: String?,
+    selectedDestination: TopLevelDestination,
     onDestinationClick: (TopLevelDestination) -> Unit
 ) {
     NavigationBar {
         TopLevelDestination.entries.forEach { destination ->
-            val selected = currentDestinationRoute == destination.route
+            val selected = selectedDestination == destination
 
             NavigationBarItem(
                 selected = selected,

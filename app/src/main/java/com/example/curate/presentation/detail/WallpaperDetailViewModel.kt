@@ -1,26 +1,26 @@
 package com.example.curate.presentation.detail
 
 import android.graphics.Bitmap
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.curate.domain.model.safeUserMessage
 import com.example.curate.domain.usecase.GetWallpaperDetailUseCase
 import com.example.curate.presentation.home.toUiModel
-import com.example.curate.presentation.navigation.Routes
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-@HiltViewModel
-class WallpaperDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+@HiltViewModel(assistedFactory = WallpaperDetailViewModel.Factory::class)
+class WallpaperDetailViewModel @AssistedInject constructor(
+    @Assisted private val wallpaperId: String,
     private val getWallpaperDetail: GetWallpaperDetailUseCase,
     private val contrastAnalyzer: WallpaperButtonContrastAnalyzer
 ) : ViewModel() {
-    private val wallpaperId: String? = savedStateHandle[Routes.WALLPAPER_ID_ARG]
     private var pendingBackButtonTint: BackButtonTint? = null
     private var lastAnalysisRequest: AnalysisRequest? = null
 
@@ -31,9 +31,13 @@ class WallpaperDetailViewModel @Inject constructor(
         loadWallpaper()
     }
 
+    @AssistedFactory
+    interface Factory {
+        fun create(wallpaperId: String): WallpaperDetailViewModel
+    }
+
     private fun loadWallpaper() {
-        val id = wallpaperId
-        if (id.isNullOrBlank()) {
+        if (wallpaperId.isBlank()) {
             _uiState.value = WallpaperDetailUiState.Error("Wallpaper id is missing.")
             return
         }
@@ -42,11 +46,11 @@ class WallpaperDetailViewModel @Inject constructor(
             _uiState.value = WallpaperDetailUiState.Loading
             _uiState.value = try {
                 WallpaperDetailUiState.Content(
-                    wallpaper = getWallpaperDetail(id).toUiModel(),
+                    wallpaper = getWallpaperDetail(wallpaperId).toUiModel(),
                     backButtonTint = pendingBackButtonTint ?: BackButtonTint.Light
                 )
             } catch (error: Exception) {
-                WallpaperDetailUiState.Error(error.message ?: "Unable to load wallpaper.")
+                WallpaperDetailUiState.Error(error.safeUserMessage("Unable to load wallpaper."))
             }
         }
     }

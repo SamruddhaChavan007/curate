@@ -10,7 +10,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -18,30 +17,29 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AnimatedScreenContent(
     modifier: Modifier = Modifier,
+    animateEntrance: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    var entered by remember { mutableStateOf(false) }
+    var entered by remember(animateEntrance) { mutableStateOf(!animateEntrance) }
     val offsetPx = with(LocalDensity.current) { 10.dp.toPx() }
-    val alpha by animateFloatAsState(
-        targetValue = if (entered) 1f else 0f,
-        animationSpec = tween(durationMillis = 220),
-        label = "screenAlpha"
-    )
-    val progress by animateFloatAsState(
+    val progress = animateFloatAsState(
         targetValue = if (entered) 1f else 0f,
         animationSpec = tween(durationMillis = 220),
         label = "screenProgress"
     )
 
-    LaunchedEffect(Unit) {
-        entered = true
+    LaunchedEffect(animateEntrance) {
+        if (animateEntrance) {
+            entered = true
+        }
     }
 
     Box(
         modifier = modifier
-            .alpha(alpha)
             .graphicsLayer {
-                translationY = (1f - progress) * offsetPx
+                val p = progress.value
+                alpha = p
+                translationY = (1f - p) * offsetPx
             }
     ) {
         content()

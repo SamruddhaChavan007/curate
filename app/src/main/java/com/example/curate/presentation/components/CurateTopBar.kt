@@ -3,6 +3,7 @@ package com.example.curate.presentation.components
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
@@ -29,6 +30,8 @@ import com.example.curate.ui.theme.PacificoFontFamily
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CurateTopBar(
+    accountInitial: String,
+    onAccountClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
@@ -53,6 +56,7 @@ fun CurateTopBar(
                     .padding(start = 8.dp, end = 16.dp)
                     .size(36.dp) // Adjusted sizing to match search field height gracefully
                     .clip(CircleShape)
+                    .clickable(onClick = onAccountClick)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(Color.LightGray, Color.Black)
@@ -61,7 +65,7 @@ fun CurateTopBar(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "A",
+                    text = accountInitial,
                     color = MaterialTheme.colorScheme.surface,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
@@ -86,7 +90,12 @@ fun CurateTopBar(
 fun PreviewCurateTopBar() {
     CurateTheme {
         Scaffold(
-            topBar = { CurateTopBar() }
+            topBar = {
+                CurateTopBar(
+                    accountInitial = "A",
+                    onAccountClick = {}
+                )
+            }
         ) { innerPadding ->
             Box(
                 modifier = Modifier

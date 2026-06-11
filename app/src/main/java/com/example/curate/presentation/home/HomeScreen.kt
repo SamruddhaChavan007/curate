@@ -3,7 +3,8 @@ package com.example.curate.presentation.home
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -35,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -42,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.example.curate.domain.model.AuthState
+import com.example.curate.domain.model.safeUserMessage
 import com.example.curate.presentation.components.CurateLoadingContent
 import com.example.curate.presentation.components.CurateMessageContent
 import com.example.curate.presentation.components.CurateTopBar
@@ -55,7 +59,9 @@ fun HomeRoute(
     viewModel: HomeViewModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    authState: AuthState,
     onWallpaperClick: (WallpaperUiModel) -> Unit,
+    onAccountClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val wallpapers = viewModel.wallpapers.collectAsLazyPagingItems()
@@ -70,7 +76,9 @@ fun HomeRoute(
         uiState = uiState,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
+        authState = authState,
         onWallpaperClick = onWallpaperClick,
+        onAccountClick = onAccountClick,
         onScrollDirectionChanged = viewModel::onScrollDirectionChanged,
         onGridItemAnimationCompleted = viewModel::onGridItemAnimationCompleted,
         modifier = modifier
@@ -84,7 +92,9 @@ fun HomeScreen(
     uiState: HomeUiState,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    authState: AuthState,
     onWallpaperClick: (WallpaperUiModel) -> Unit,
+    onAccountClick: () -> Unit,
     onScrollDirectionChanged: (HomeScrollDirection) -> Unit,
     onGridItemAnimationCompleted: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -99,9 +109,11 @@ fun HomeScreen(
         TopAppBarDefaults.TopAppBarExpandedHeight
     }
     val topBarOverlayHeight = statusBarTopPadding + topBarHeight
-    val animatedGridViewportTopPadding by animateDpAsState(
-        targetValue = if (uiState.isTopBarVisible) topBarOverlayHeight else 0.dp,
-        label = "HomeGridViewportTopPadding"
+    val topBarOverlayHeightPx = with(density) { topBarOverlayHeight.toPx() }
+    val animatedGridViewportTopOffsetPx by animateFloatAsState(
+        targetValue = if (uiState.isTopBarVisible) topBarOverlayHeightPx else 0f,
+        animationSpec = tween(durationMillis = 300),
+        label = "HomeGridViewportTopOffset"
     )
     val wallpaperGridContentPadding = PaddingValues(
         start = WallpaperGridEdgePadding,
@@ -124,7 +136,7 @@ fun HomeScreen(
             )
 
             is LoadState.Error -> CurateMessageContent(
-                message = refreshState.error.message ?: "Unable to load wallpapers.",
+                message = refreshState.error.safeUserMessage("Unable to load wallpapers."),
                 actionLabel = "Retry",
                 onAction = wallpapers::retry,
                 modifier = Modifier
@@ -149,7 +161,9 @@ fun HomeScreen(
                         contentPadding = wallpaperGridContentPadding,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(top = animatedGridViewportTopPadding),
+                            .graphicsLayer {
+                                translationY = animatedGridViewportTopOffsetPx
+                            },
                         gridState = gridState,
                         shouldAnimateItems = uiState.shouldAnimateGridItems,
                         animatedItemIds = uiState.animatedGridItemIds,
@@ -166,6 +180,8 @@ fun HomeScreen(
                         HomeTopBarOverlay(
                             statusBarTopPadding = statusBarTopPadding,
                             topBarHeight = topBarHeight,
+                            accountInitial = authState.accountInitial(),
+                            onAccountClick = onAccountClick,
                             onTopBarMeasured = { measuredHeightPx ->
                                 topBarHeightPx = measuredHeightPx
                             }
@@ -215,10 +231,21 @@ private fun ObserveHomeScrollDirection(
 private fun HomeTopBarOverlay(
     statusBarTopPadding: Dp,
     topBarHeight: Dp,
+    accountInitial: String,
+    onAccountClick: () -> Unit,
     onTopBarMeasured: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val surface = MaterialTheme.colorScheme.surface
+    val topBarGradient = remember(surface) {
+        Brush.verticalGradient(
+            colors = listOf(
+                surface.copy(alpha = 0.92f),
+                surface.copy(alpha = 0.78f),
+                surface.copy(alpha = 0f)
+            )
+        )
+    }
 
     Box(
         modifier = modifier
@@ -229,18 +256,12 @@ private fun HomeTopBarOverlay(
             modifier = Modifier
                 .matchParentSize()
                 .blur(14.dp)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            surface.copy(alpha = 0.92f),
-                            surface.copy(alpha = 0.78f),
-                            surface.copy(alpha = 0f)
-                        )
-                    )
-                )
+                .background(topBarGradient)
         )
 
         CurateTopBar(
+            accountInitial = accountInitial,
+            onAccountClick = onAccountClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
@@ -248,5 +269,15 @@ private fun HomeTopBarOverlay(
                     onTopBarMeasured(coordinates.size.height)
                 }
         )
+    }
+}
+
+private fun AuthState.accountInitial(): String {
+    return when (this) {
+        is AuthState.Authenticated -> {
+            val source = user.displayName?.takeIf { it.isNotBlank() } ?: user.email.orEmpty()
+            source.firstOrNull()?.uppercaseChar()?.toString() ?: "A"
+        }
+        else -> "?"
     }
 }

@@ -21,6 +21,7 @@ fun DiscoverScreen(
     modifier: Modifier = Modifier
 ) {
     AnimatedScreenContent(
+        animateEntrance = false,
         modifier = modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.statusBars)

@@ -2,12 +2,10 @@ package com.example.curate.presentation.detail
 
 import android.graphics.Bitmap
 import android.graphics.Color
-import androidx.lifecycle.SavedStateHandle
 import androidx.paging.PagingData
 import com.example.curate.domain.model.Wallpaper
 import com.example.curate.domain.repository.WallpaperRepository
 import com.example.curate.domain.usecase.GetWallpaperDetailUseCase
-import com.example.curate.presentation.navigation.Routes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -90,7 +88,7 @@ class WallpaperDetailViewModelTest {
         analyzer: WallpaperButtonContrastAnalyzer = FakeContrastAnalyzer(BackButtonTint.Light)
     ): WallpaperDetailViewModel {
         return WallpaperDetailViewModel(
-            savedStateHandle = SavedStateHandle(mapOf(Routes.WALLPAPER_ID_ARG to WALLPAPER_ID)),
+            wallpaperId = WALLPAPER_ID,
             getWallpaperDetail = GetWallpaperDetailUseCase(FakeWallpaperRepository()),
             contrastAnalyzer = analyzer
         )

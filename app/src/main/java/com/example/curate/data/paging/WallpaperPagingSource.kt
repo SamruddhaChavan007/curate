@@ -2,6 +2,7 @@ package com.example.curate.data.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.example.curate.data.error.AppErrorMapper
 import com.example.curate.data.remote.unsplash.UnsplashApi
 import com.example.curate.data.remote.unsplash.mapper.toDomain
 import com.example.curate.domain.model.Wallpaper
@@ -37,7 +38,7 @@ class WallpaperPagingSource(
             )
         } catch (error: Exception) {
             Timber.e(error, "Unable to load wallpapers")
-            LoadResult.Error(error)
+            LoadResult.Error(AppErrorMapper.toException(error))
         }
     }
 

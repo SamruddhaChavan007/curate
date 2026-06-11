@@ -31,7 +31,7 @@ fun StaggeredGridItem(
     val shouldAnimateOnEntry = remember(itemKey) { shouldAnimate }
     val currentOnAnimationCompleted by rememberUpdatedState(onAnimationCompleted)
     val offsetPx = with(LocalDensity.current) { 32.dp.toPx() }
-    val alpha by animateFloatAsState(
+    val alpha = animateFloatAsState(
         targetValue = if (entered) 1f else 0f,
         animationSpec = tween(
             durationMillis = 360,
@@ -39,7 +39,7 @@ fun StaggeredGridItem(
         ),
         label = "gridItemAlpha"
     )
-    val progress by animateFloatAsState(
+    val progress = animateFloatAsState(
         targetValue = if (entered) 1f else 0f,
         animationSpec = tween(
             durationMillis = 420,
@@ -60,10 +60,12 @@ fun StaggeredGridItem(
 
     Box(
         modifier = modifier.graphicsLayer {
-            this.alpha = alpha
-            translationY = (1f - progress) * offsetPx
-            scaleX = 0.92f + (0.08f * progress)
-            scaleY = 0.92f + (0.08f * progress)
+            val a = alpha.value
+            val p = progress.value
+            this.alpha = a
+            translationY = (1f - p) * offsetPx
+            scaleX = 0.92f + (0.08f * p)
+            scaleY = 0.92f + (0.08f * p)
         }
     ) {
         content()

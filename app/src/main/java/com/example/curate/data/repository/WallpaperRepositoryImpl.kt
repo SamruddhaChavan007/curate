@@ -3,6 +3,7 @@ package com.example.curate.data.repository
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import com.example.curate.data.error.AppErrorMapper
 import com.example.curate.data.paging.WallpaperPagingSource
 import com.example.curate.data.remote.unsplash.UnsplashApi
 import com.example.curate.data.remote.unsplash.mapper.toDomain
@@ -32,7 +33,11 @@ class WallpaperRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getWallpaper(id: String): Wallpaper {
-        return api.getPhoto(id).toDomain()
+        return try {
+            api.getPhoto(id).toDomain()
+        } catch (error: Exception) {
+            throw AppErrorMapper.toException(error)
+        }
     }
 
     private companion object {

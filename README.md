@@ -2,15 +2,21 @@
 
 Curate is an Android wallpaper discovery app built with Kotlin, Jetpack Compose, MVVM, Hilt, Paging 3, Coil, Ktor, Supabase, and Material 3 Expressive.
 
-The app currently focuses on a smooth wallpaper feed experience:
+The app currently covers wallpaper discovery, detail viewing, and user authentication:
 
 - Unsplash-powered wallpaper discovery.
 - Infinite scrolling with Paging 3.
 - Staggered image grid with subtle expressive item animations on fresh open and downward scroll.
 - Coil image loading and near-viewport image prefetching.
+- BlurHash placeholder decoding so every image loads into a color-accurate blur before the preview arrives.
 - Shared element transitions from grid images into the detail screen.
 - Detail image loading that uses the cached preview image while the full image loads.
-- Reusable presentation components for loading, empty/error states, wallpaper cards, search, and detail chrome.
+- Dynamic button contrast on the detail screen via the Palette API — icon tints adapt to the wallpaper's dominant colors.
+- Animated splash screen with a condition-gated exit tied to the home feed's initial load state.
+- Email/password sign-in and sign-up backed by Supabase Auth, with session refresh and sign-out.
+- Auth state machine (`Loading → Authenticated / Unauthenticated / Error / ConfigUnavailable`) propagated app-wide via `AuthSessionViewModel`.
+- Library screen gated behind authentication, prompting sign-in when the user is unauthenticated.
+- Reusable presentation components for loading, empty/error states, wallpaper cards, search, auth top bar, and detail chrome.
 
 ## Tech Stack
 
@@ -20,9 +26,10 @@ The app currently focuses on a smooth wallpaper feed experience:
 | Architecture | MVVM with domain/data/presentation layers |
 | Dependency injection | Hilt |
 | Networking | Ktor with OkHttp |
-| Images | Coil 3 |
+| Images | Coil 3, BlurHash, AndroidX Palette |
 | Pagination | Paging 3 |
-| Backend services | Unsplash API, Supabase Kotlin |
+| Backend services | Unsplash API, Supabase Kotlin (Auth) |
+| Splash screen | AndroidX SplashScreen |
 | Logging | Timber |
 
 ## Requirements
@@ -110,6 +117,10 @@ app/src/main/java/com/example/curate/
 |   |-- repository/
 |   `-- usecase/
 |-- presentation/
+|   |-- auth/
+|   |   |-- signin/
+|   |   |-- signup/
+|   |   `-- account/
 |   |-- components/
 |   |-- detail/
 |   |-- discover/
@@ -164,9 +175,14 @@ Composables:
 - New grid items animate only while scrolling down.
 - Items do not reanimate after their wallpaper ID has been recorded in `HomeUiState.animatedGridItemIds`.
 - Visible and near-future wallpaper previews are prefetched with `WallpaperImagePrefetcher`.
+- Every wallpaper image decodes its BlurHash via `BlurHashDecoder` and shows it as a placeholder before the Coil request completes.
 - Shared element transitions use stable keys: `wallpaper-image-${id}`.
 - The detail screen loads `fullUrl` while using `previewUrl` as the memory-cache placeholder.
+- The detail screen uses `WallpaperButtonContrastAnalyzer` (Palette API) to tint action icons so they remain legible against the loaded wallpaper.
+- The splash screen exits only after the home feed's initial refresh state is known, preventing a blank-screen flash.
 - The bottom navigation uses icon brightness for selection, with no selected-item background indicator.
+- Auth screens share a reusable `AuthTopBar` component.
+- `AuthSessionViewModel` is scoped to the activity and drives auth-gated routes throughout the nav graph.
 
 ## Logging
 
@@ -189,8 +205,8 @@ Likely future areas:
 
 - Search and filter controls backed by Unsplash search parameters.
 - Favorites and collections synced with Supabase.
-- Authentication for user-owned data.
 - Wallpaper apply/download flows with Unsplash download tracking.
+- Discover screen content — currently a placeholder.
 - Additional top-level screens using the shared animation and component framework.
 
 ## References

@@ -27,6 +27,7 @@ object NetworkModule {
     @Singleton
     fun provideHttpClient(json: Json): HttpClient {
         return HttpClient(OkHttp) {
+            expectSuccess = true
             install(ContentNegotiation) {
                 json(json)
             }

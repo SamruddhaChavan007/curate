@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
+import com.example.curate.domain.model.safeUserMessage
 import com.example.curate.presentation.home.WallpaperUiModel
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -81,7 +82,7 @@ fun WallpaperGrid(
         if (appendError != null) {
             item(key = "append-error") {
                 CurateMessageContent(
-                    message = appendError.error.message ?: "Unable to load more wallpapers.",
+                    message = appendError.error.safeUserMessage("Unable to load more wallpapers."),
                     actionLabel = "Retry",
                     onAction = wallpapers::retry,
                     modifier = Modifier
