@@ -1,10 +1,10 @@
 package com.example.curate.presentation.navigation
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -15,6 +15,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -39,6 +41,8 @@ import com.example.curate.presentation.home.HomeViewModel
 import com.example.curate.presentation.home.WallpaperUiModel
 import com.example.curate.presentation.library.LibraryRoute
 import com.example.curate.presentation.search.SearchRoute
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -52,6 +56,8 @@ fun CurateNavHost(
     val authState by authSessionViewModel.authState.collectAsState()
     var transitionSeedWallpaper by remember { mutableStateOf<WallpaperUiModel?>(null) }
     var isBottomBarVisible by rememberSaveable { mutableStateOf(true) }
+    var previousKey by remember { mutableStateOf<CurateNavKey?>(null) }
+    var isRestoringFromDetail by remember { mutableStateOf(false) }
     val currentKey = navigationState.currentKey
 
     SharedTransitionLayout {
@@ -69,6 +75,22 @@ fun CurateNavHost(
             }
         }
 
+        LaunchedEffect(currentKey) {
+            val wasDetail = previousKey is CurateNavKey.WallpaperDetail
+            val isDetail = currentKey is CurateNavKey.WallpaperDetail
+            previousKey = currentKey
+
+            if (wasDetail && !isDetail) {
+                isRestoringFromDetail = true
+                withFrameNanos { }
+                withTimeoutOrNull(1_000L) {
+                    snapshotFlow { isTransitionActive }.first { active -> !active }
+                }
+                isBottomBarVisible = true
+                isRestoringFromDetail = false
+            }
+        }
+
         LaunchedEffect(currentKey, navigationState.selectedDestination) {
             if (currentKey !is CurateNavKey.WallpaperDetail) {
                 transitionSeedWallpaper = null
@@ -81,7 +103,7 @@ fun CurateNavHost(
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
-                if (navigationState.isAtTopLevelRoot) {
+                if (navigationState.isAtTopLevelRoot && !isRestoringFromDetail) {
                     AnimatedVisibility(
                         visible = isBottomBarVisible,
                         enter = slideInVertically(initialOffsetY = { it }),
@@ -113,7 +135,9 @@ fun CurateNavHost(
                             sharedTransitionScope = this@SharedTransitionLayout,
                             animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                             authState = authState,
+                            isReturningFromDetail = isRestoringFromDetail,
                             onWallpaperClick = { wallpaper ->
+                                isBottomBarVisible = false
                                 transitionSeedWallpaper = wallpaper
                                 navigationState.push(CurateNavKey.WallpaperDetail(wallpaper.id))
                             },
@@ -179,3 +203,4 @@ fun CurateNavHost(
         }
     }
 }
+

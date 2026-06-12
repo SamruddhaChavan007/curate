@@ -12,18 +12,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.curate.ui.theme.PacificoFontFamily
+import com.example.curate.ui.theme.curateColors
 
 @Composable
 fun AuthTopBar() {
+    val curateColors = MaterialTheme.curateColors
+
     Text(
         text = "Curate",
         fontFamily = PacificoFontFamily,
         style = MaterialTheme.typography.headlineLarge,
-        color = MaterialTheme.colorScheme.onSurface
+        color = curateColors.onSurface
     )
     Row(
         modifier = Modifier
@@ -37,7 +39,7 @@ fun AuthTopBar() {
         Text(
             text = "Curate Your Experience",
             style = MaterialTheme.typography.labelLarge,
-            color = Color.Gray,
+            color = curateColors.onSubtle,
             letterSpacing = 2.sp
         )
         Spacer(Modifier.width(4.dp))

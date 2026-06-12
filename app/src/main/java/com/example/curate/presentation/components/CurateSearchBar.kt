@@ -13,17 +13,19 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.curate.ui.theme.CurateTheme
+import com.example.curate.ui.theme.curateColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +35,8 @@ fun CurateSearchBar(
     modifier: Modifier = Modifier,
     onFocusChange: (Boolean) -> Unit = {}
 ) {
+    val curateColors = MaterialTheme.curateColors
+
     TextField(
         value = query,
         onValueChange = onQueryChange,
@@ -42,8 +46,20 @@ fun CurateSearchBar(
             .padding(10.dp)
             .onFocusChanged { onFocusChange(it.isFocused) },
         shape = RoundedCornerShape(30.dp),
-        placeholder = { Text("Search...") },
+        placeholder = { Text("Search...", color = curateColors.onSubtle) },
         colors = TextFieldDefaults.colors(
+            focusedTextColor = curateColors.onSurface,
+            unfocusedTextColor = curateColors.onSurface,
+            cursorColor = curateColors.onSurface,
+            focusedContainerColor = curateColors.chrome,
+            unfocusedContainerColor = curateColors.chrome,
+            disabledContainerColor = curateColors.chrome,
+            focusedLeadingIconColor = curateColors.onSubtle,
+            unfocusedLeadingIconColor = curateColors.onFaint,
+            focusedTrailingIconColor = curateColors.onSubtle,
+            unfocusedTrailingIconColor = curateColors.onFaint,
+            focusedPlaceholderColor = curateColors.onSubtle,
+            unfocusedPlaceholderColor = curateColors.onSubtle,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent

@@ -22,13 +22,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.curate.ui.theme.CurateTheme
+import com.example.curate.ui.theme.curateColors
 
 @Composable
 fun CurateRecent() {
+    val curateColors = MaterialTheme.curateColors
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -39,7 +41,7 @@ fun CurateRecent() {
         Icon(
             imageVector = Icons.Default.AccessTime,
             contentDescription = "Recents",
-            tint = Color.LightGray,
+            tint = curateColors.onFaint,
             modifier = Modifier.size(12.dp)
         )
 
@@ -47,7 +49,7 @@ fun CurateRecent() {
 
         Text(
             text = "neon city",
-            color = MaterialTheme.colorScheme.onSurface,
+            color = curateColors.onSurface,
             style = MaterialTheme.typography.headlineSmall
         )
 
@@ -55,7 +57,7 @@ fun CurateRecent() {
 
         Text(
             text = "H", // Hours
-            color = Color.LightGray,
+            color = curateColors.onFaint,
             style = MaterialTheme.typography.bodyMedium
         )
 
@@ -67,7 +69,7 @@ fun CurateRecent() {
             Icon(
                 imageVector = Icons.Default.Clear,
                 contentDescription = "Clear Recent",
-                tint = Color.LightGray,
+                tint = curateColors.onFaint,
                 modifier = Modifier.size(12.dp)
             )
         }

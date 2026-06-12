@@ -9,13 +9,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.example.curate.presentation.navigation.TopLevelDestination
+import com.example.curate.ui.theme.curateColors
 
 @Composable
 fun CurateBottomNavigationBar(
     selectedDestination: TopLevelDestination,
     onDestinationClick: (TopLevelDestination) -> Unit
 ) {
-    NavigationBar {
+    val curateColors = MaterialTheme.curateColors
+
+    NavigationBar(
+        containerColor = curateColors.bg,
+        contentColor = curateColors.onSurface
+    ) {
         TopLevelDestination.entries.forEach { destination ->
             val selected = selectedDestination == destination
 
@@ -23,8 +29,10 @@ fun CurateBottomNavigationBar(
                 selected = selected,
                 onClick = { onDestinationClick(destination) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.onSurface,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                    selectedIconColor = curateColors.onSurface,
+                    selectedTextColor = curateColors.onSurface,
+                    unselectedIconColor = curateColors.onFaint,
+                    unselectedTextColor = curateColors.onFaint,
                     indicatorColor = Color.Transparent
                 ),
                 icon = {

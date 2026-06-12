@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.example.curate.presentation.home.WallpaperUiModel
+import com.example.curate.ui.theme.curateColors
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -25,6 +26,7 @@ fun WallpaperCard(
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(8.dp)
+    val curateColors = MaterialTheme.curateColors
 
     with(sharedTransitionScope) {
         CurateWallpaperImage(
@@ -32,7 +34,7 @@ fun WallpaperCard(
             contentDescription = "Wallpaper by ${wallpaper.photographerName}",
             blurHash = wallpaper.blurHash,
             contentScale = ContentScale.Crop,
-            fallbackColor = MaterialTheme.colorScheme.surfaceVariant,
+            fallbackColor = curateColors.chrome,
             fadeInImage = false,
             modifier = modifier
                 .fillMaxWidth()

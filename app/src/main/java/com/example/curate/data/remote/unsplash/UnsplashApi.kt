@@ -1,8 +1,8 @@
 package com.example.curate.data.remote.unsplash
 
 import com.example.curate.core.config.AppConfig
-import com.example.curate.data.remote.unsplash.dto.UnsplashSearchResponseDto
 import com.example.curate.data.remote.unsplash.dto.UnsplashPhotoDto
+import com.example.curate.data.remote.unsplash.dto.UnsplashSearchResponseDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get

@@ -2,16 +2,16 @@ package com.example.curate.data.repository
 
 import com.example.curate.data.remote.supabase.auth.SupabaseAuthGateway
 import com.example.curate.data.remote.supabase.auth.SupabaseAuthSessionStatus
+import com.example.curate.di.ApplicationScope
 import com.example.curate.domain.model.AuthState
 import com.example.curate.domain.model.AuthUser
 import com.example.curate.domain.repository.AuthRepository
-import com.example.curate.di.ApplicationScope
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
     private val authGateway: SupabaseAuthGateway,

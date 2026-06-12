@@ -1,12 +1,15 @@
 package com.example.curate.presentation.detail
 
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -28,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,16 +43,17 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.bitmapConfig
-import com.example.curate.presentation.components.CurateWallpaperImage
 import com.example.curate.presentation.components.CurateLoadingContent
 import com.example.curate.presentation.components.CurateMessageContent
+import com.example.curate.presentation.components.CurateWallpaperImage
 import com.example.curate.presentation.home.WallpaperUiModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -126,12 +131,27 @@ fun WallpaperDetailScreen(
     val coroutineScope = rememberCoroutineScope()
     val dismissThresholdPx = with(density) { DragDismissThreshold.toPx() }
     val dragOffsetY = remember { Animatable(0f) }
-    var isDismissRequested by remember { mutableStateOf(false) }
+    var isExitRequested by remember { mutableStateOf(false) }
     var loadedBitmap by remember(wallpaper.id) { mutableStateOf<Bitmap?>(null) }
     var imageBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
     var buttonBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
     val dismissProgress = (dragOffsetY.value / dismissThresholdPx).coerceIn(0f, 1f)
     val contentScale = 1f - (dismissProgress * DragDismissScaleRange)
+    val currentOnBackClick by rememberUpdatedState(onBackClick)
+    val chromeAlpha by animateFloatAsState(
+        targetValue = if (isExitRequested) 0f else 1f,
+        animationSpec = tween(durationMillis = DetailExitChromeFadeMillis),
+        label = "DetailExitChromeAlpha"
+    )
+    val requestExit = remember {
+        {
+            if (!isExitRequested) {
+                isExitRequested = true
+            }
+        }
+    }
+
+    BackHandler(onBack = requestExit)
 
     LaunchedEffect(wallpaper.id, loadedBitmap, imageBounds, buttonBounds) {
         val bitmap = loadedBitmap
@@ -142,11 +162,18 @@ fun WallpaperDetailScreen(
         }
     }
 
+    LaunchedEffect(isExitRequested) {
+        if (isExitRequested) {
+            delay(DetailExitChromeFadeMillis.toLong())
+            currentOnBackClick()
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 1f - dismissProgress * DragDismissBackgroundFade))
-            .pointerInput(onBackClick, dismissThresholdPx) {
+            .background(Color.Black.copy(alpha = chromeAlpha * (1f - dismissProgress * DragDismissBackgroundFade)))
+            .pointerInput(dismissThresholdPx) {
                 detectVerticalDragGestures(
                     onVerticalDrag = { change, dragAmount ->
                         change.consume()
@@ -156,9 +183,8 @@ fun WallpaperDetailScreen(
                         }
                     },
                     onDragEnd = {
-                        if (dragOffsetY.value >= dismissThresholdPx && !isDismissRequested) {
-                            isDismissRequested = true
-                            onBackClick()
+                        if (dragOffsetY.value >= dismissThresholdPx && !isExitRequested) {
+                            requestExit()
                         } else {
                             coroutineScope.launch {
                                 dragOffsetY.animateTo(
@@ -196,7 +222,7 @@ fun WallpaperDetailScreen(
                 contentDescription = "Wallpaper by ${wallpaper.photographerName}",
                 blurHash = wallpaper.blurHash,
                 contentScale = ContentScale.Crop,
-                fallbackColor = Color.Black,
+                fallbackColor = Color.Transparent,
                 fadeInImage = false,
                 onBitmapLoaded = { loadedBitmap = it },
                 modifier = Modifier
@@ -218,7 +244,7 @@ fun WallpaperDetailScreen(
         }
 
         IconButton(
-            onClick = onBackClick,
+            onClick = requestExit,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .windowInsetsPadding(WindowInsets.statusBars)
@@ -227,7 +253,7 @@ fun WallpaperDetailScreen(
                     buttonBounds = coordinates.toImageBounds()
                 }
                 .graphicsLayer {
-                    alpha = if (isDismissRequested) 0f else 1f - dismissProgress
+                    alpha = chromeAlpha * (1f - dismissProgress)
                 }
         ) {
             Icon(
@@ -259,3 +285,4 @@ private fun androidx.compose.ui.layout.LayoutCoordinates.toImageBounds(): ImageB
 private val DragDismissThreshold = 140.dp
 private const val DragDismissScaleRange = 0.08f
 private const val DragDismissBackgroundFade = 0.65f
+private const val DetailExitChromeFadeMillis = 120

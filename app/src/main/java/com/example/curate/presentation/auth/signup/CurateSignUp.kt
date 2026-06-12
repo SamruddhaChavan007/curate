@@ -1,5 +1,6 @@
 package com.example.curate.presentation.auth.signup
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +41,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.curate.presentation.components.AuthTopBar
+import com.example.curate.ui.theme.curateColors
 
 @Composable
 fun SignUpRoute(
@@ -74,6 +77,8 @@ fun CurateSignUp(
     onSignInClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val curateColors = MaterialTheme.curateColors
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -205,7 +210,7 @@ fun CurateSignUp(
             uiState.successMessage?.let { message ->
                 Text(
                     text = message,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = curateColors.success,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -216,11 +221,20 @@ fun CurateSignUp(
             Button(
                 onClick = onSubmit,
                 enabled = !uiState.isLoading,
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
+                    .padding(top = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = curateColors.onSurface,
+                    contentColor = curateColors.bg,
+                    disabledContainerColor = curateColors.onSurface.copy(alpha = 0.32f),
+                    disabledContentColor = curateColors.bg.copy(alpha = 0.62f)
+                )
             ) {
-                Text(text = if (uiState.isLoading) "Creating account..." else "Create account")
+                Text(
+                    text = if (uiState.isLoading) "Creating account..." else "Create account"
+                )
             }
 
             OutlinedButton(
@@ -228,7 +242,13 @@ fun CurateSignUp(
                 enabled = !uiState.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
+                    .padding(top = 8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = curateColors.onSurface,
+                    disabledContentColor = curateColors.onFaint
+                ),
+                border = BorderStroke(1.dp, curateColors.hairline),
+                shape = RoundedCornerShape(10.dp),
             ) {
                 Text(text = "Sign in instead")
             }
@@ -238,8 +258,22 @@ fun CurateSignUp(
 
 @Composable
 private fun authTextFieldColors() = TextFieldDefaults.colors(
+    focusedTextColor = MaterialTheme.curateColors.onSurface,
+    unfocusedTextColor = MaterialTheme.curateColors.onSurface,
+    focusedContainerColor = MaterialTheme.curateColors.chrome,
+    unfocusedContainerColor = MaterialTheme.curateColors.chrome,
+    disabledContainerColor = MaterialTheme.curateColors.chrome,
+    cursorColor = MaterialTheme.curateColors.onSurface,
+    focusedLeadingIconColor = MaterialTheme.curateColors.onSubtle,
+    unfocusedLeadingIconColor = MaterialTheme.curateColors.onFaint,
+    focusedTrailingIconColor = MaterialTheme.curateColors.onSubtle,
+    unfocusedTrailingIconColor = MaterialTheme.curateColors.onFaint,
+    focusedPlaceholderColor = MaterialTheme.curateColors.onSubtle,
+    unfocusedPlaceholderColor = MaterialTheme.curateColors.onSubtle,
+    errorContainerColor = MaterialTheme.curateColors.chrome,
+    errorCursorColor = MaterialTheme.colorScheme.error,
     focusedIndicatorColor = Color.Transparent,
     unfocusedIndicatorColor = Color.Transparent,
     disabledIndicatorColor = Color.Transparent,
-    cursorColor = Color.Gray
+    errorIndicatorColor = Color.Transparent
 )

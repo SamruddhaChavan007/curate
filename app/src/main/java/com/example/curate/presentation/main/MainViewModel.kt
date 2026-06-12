@@ -3,11 +3,11 @@ package com.example.curate.presentation.main
 import androidx.lifecycle.ViewModel
 import com.example.curate.domain.usecase.GetHomeMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(

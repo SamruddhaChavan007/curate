@@ -9,8 +9,8 @@ import com.example.curate.data.remote.unsplash.UnsplashApi
 import com.example.curate.data.remote.unsplash.mapper.toDomain
 import com.example.curate.domain.model.Wallpaper
 import com.example.curate.domain.repository.WallpaperRepository
-import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
 class WallpaperRepositoryImpl @Inject constructor(
     private val api: UnsplashApi

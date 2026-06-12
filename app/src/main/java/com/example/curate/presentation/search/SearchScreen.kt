@@ -25,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -34,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.curate.presentation.components.CurateRecent
 import com.example.curate.presentation.components.CurateSearchBar
+import com.example.curate.ui.theme.curateColors
 
 @Composable
 fun SearchRoute(
@@ -61,6 +61,7 @@ fun SearchScreen(
     val isKeyboardVisible = WindowInsets.ime.getBottom(density) > 0
     var isSearchFocused by remember { mutableStateOf(false) }
     var wasKeyboardVisibleForSearch by remember { mutableStateOf(false) }
+    val curateColors = MaterialTheme.curateColors
 
     LaunchedEffect(isSearchFocused) {
         if (!isSearchFocused) {
@@ -109,14 +110,14 @@ fun SearchScreen(
             ) {
                 Text(
                     text = "RECENT",
-                    color = Color.LightGray,
+                    color = curateColors.onFaint,
                     style = MaterialTheme.typography.labelLarge,
                     letterSpacing = 2.sp
                 )
 
                 Text(
                     text = "CLEAR ALL",
-                    color = Color.Gray,
+                    color = curateColors.onSubtle,
                     modifier = Modifier.clickable {},
                     style = MaterialTheme.typography.labelLarge
                 )

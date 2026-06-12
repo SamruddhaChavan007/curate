@@ -8,12 +8,12 @@ import com.example.curate.domain.usecase.IsNetworkAvailableUseCase
 import com.example.curate.domain.usecase.SignInUseCase
 import com.example.curate.presentation.auth.AuthFormValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class SignInViewModel @Inject constructor(
