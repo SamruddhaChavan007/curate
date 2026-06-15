@@ -12,9 +12,16 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
@@ -22,8 +29,19 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,10 +67,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.bitmapConfig
+import com.example.curate.domain.model.AuthState
 import com.example.curate.presentation.components.CurateLoadingContent
 import com.example.curate.presentation.components.CurateMessageContent
 import com.example.curate.presentation.components.CurateWallpaperImage
 import com.example.curate.presentation.home.WallpaperUiModel
+import com.example.curate.ui.theme.curateColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -64,7 +84,10 @@ fun WallpaperDetailRoute(
     transitionSeedWallpaper: WallpaperUiModel?,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    authState: AuthState,
     onBackClick: () -> Unit,
+    onSignInClick: () -> Unit,
+    onSignUpClick: () -> Unit,
     viewModel: WallpaperDetailViewModel = hiltViewModel<WallpaperDetailViewModel, WallpaperDetailViewModel.Factory>(
         creationCallback = { factory -> factory.create(wallpaperId) }
     ),
@@ -72,10 +95,14 @@ fun WallpaperDetailRoute(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val loadedWallpaper = (uiState as? WallpaperDetailUiState.Content)?.wallpaper
-    val backButtonTint = (uiState as? WallpaperDetailUiState.Content)?.backButtonTint ?: BackButtonTint.Light
+    val isFavorite = (uiState as? WallpaperDetailUiState.Content)?.isFavorite ?: false
+    val isAuthenticated = authState is AuthState.Authenticated
+    val backButtonTint =
+        (uiState as? WallpaperDetailUiState.Content)?.backButtonTint ?: BackButtonTint.Light
     var sharedWallpaper by remember {
         mutableStateOf(transitionSeedWallpaper ?: loadedWallpaper)
     }
+    var authRequiredAction by remember { mutableStateOf<AuthRequiredAction?>(null) }
 
     LaunchedEffect(transitionSeedWallpaper?.id, loadedWallpaper?.id) {
         if (sharedWallpaper == null) {
@@ -90,10 +117,38 @@ fun WallpaperDetailRoute(
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
             backButtonTint = backButtonTint,
+            isFavorite = isAuthenticated && isFavorite,
             onBackClick = onBackClick,
+            onFavoriteClick = {
+                if (isAuthenticated) {
+                    viewModel.onFavoriteClick()
+                } else {
+                    authRequiredAction = AuthRequiredAction.Favorite
+                }
+            },
+            onDownloadClick = {
+                if (!isAuthenticated) {
+                    authRequiredAction = AuthRequiredAction.Download
+                }
+            },
             onWallpaperImageReady = viewModel::onWallpaperImageReady,
             modifier = modifier
         )
+
+        authRequiredAction?.let { action ->
+            AuthRequiredBottomSheet(
+                action = action,
+                onDismiss = { authRequiredAction = null },
+                onSignInClick = {
+                    authRequiredAction = null
+                    onSignInClick()
+                },
+                onSignUpClick = {
+                    authRequiredAction = null
+                    onSignUpClick()
+                }
+            )
+        }
         return
     }
 
@@ -103,6 +158,7 @@ fun WallpaperDetailRoute(
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.statusBars)
         )
+
         is WallpaperDetailUiState.Error -> CurateMessageContent(
             message = state.message,
             actionLabel = "Back",
@@ -111,6 +167,7 @@ fun WallpaperDetailRoute(
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.statusBars)
         )
+
         is WallpaperDetailUiState.Content -> Unit
     }
 }
@@ -122,7 +179,10 @@ fun WallpaperDetailScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     backButtonTint: BackButtonTint,
+    isFavorite: Boolean,
     onBackClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    onDownloadClick: () -> Unit,
     onWallpaperImageReady: (String, Bitmap, ImageBounds, ImageBounds) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -135,6 +195,7 @@ fun WallpaperDetailScreen(
     var loadedBitmap by remember(wallpaper.id) { mutableStateOf<Bitmap?>(null) }
     var imageBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
     var buttonBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
+    var bottomBarBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
     val dismissProgress = (dragOffsetY.value / dismissThresholdPx).coerceIn(0f, 1f)
     val contentScale = 1f - (dismissProgress * DragDismissScaleRange)
     val currentOnBackClick by rememberUpdatedState(onBackClick)
@@ -262,7 +323,154 @@ fun WallpaperDetailScreen(
                 tint = backButtonTint.toColor()
             )
         }
+
+        DetailBottomRow(
+            chromeAlpha = chromeAlpha,
+            dismissProgress = dismissProgress,
+            backButtonTint = backButtonTint,
+            isFavorite = isFavorite,
+            onFavoriteClick = onFavoriteClick,
+            onDownloadClick = onDownloadClick,
+            onBoundsMeasured = { bounds ->
+                bottomBarBounds = bounds
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(bottom = 16.dp)
+        )
     }
+}
+
+@Composable
+fun DetailBottomRow(
+    onBoundsMeasured: (ImageBounds) -> Unit,
+    chromeAlpha: Float,
+    dismissProgress: Float,
+    backButtonTint: BackButtonTint,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit,
+    onDownloadClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .padding(6.dp)
+            .onGloballyPositioned { coordinates ->
+                onBoundsMeasured(coordinates.toImageBounds())
+            },
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        IconButton(
+            onClick = onFavoriteClick,
+            modifier = Modifier
+                .padding(start = 8.dp, bottom = 8.dp)
+                .graphicsLayer {
+                    alpha = chromeAlpha * (1f - dismissProgress)
+                }
+        ) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = "Favourites",
+                tint = backButtonTint.toColor()
+            )
+        }
+
+        IconButton(
+            onClick = { },
+            modifier = Modifier
+                .padding(bottom = 8.dp)
+                .graphicsLayer {
+                    alpha = chromeAlpha * (1f - dismissProgress)
+                }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = "Information",
+                tint = backButtonTint.toColor()
+            )
+        }
+
+        IconButton(
+            onClick = onDownloadClick,
+            modifier = Modifier
+                .padding(end = 8.dp, bottom = 8.dp)
+                .graphicsLayer {
+                    alpha = chromeAlpha * (1f - dismissProgress)
+                }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Download,
+                contentDescription = "Download",
+                tint = backButtonTint.toColor()
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AuthRequiredBottomSheet(
+    action: AuthRequiredAction,
+    onDismiss: () -> Unit,
+    onSignInClick: () -> Unit,
+    onSignUpClick: () -> Unit
+) {
+    val curateColors = MaterialTheme.curateColors
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = action.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = curateColors.onSurface
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = action.message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = curateColors.onSubtle
+            )
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = onSignInClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = curateColors.onSurface,
+                    contentColor = curateColors.bg
+                )
+            ) {
+                Text("Sign in")
+            }
+            OutlinedButton(
+                onClick = onSignUpClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                Text("Create account")
+            }
+        }
+    }
+}
+
+enum class AuthRequiredAction(
+    val title: String,
+    val message: String
+) {
+    Favorite(
+        title = "Sign in to save favourites",
+        message = "Sign in or create an account to mark wallpapers as favourite."
+    ),
+    Download(
+        title = "Sign in to download",
+        message = "Sign in or create an account to download wallpapers."
+    )
 }
 
 private fun BackButtonTint.toColor(): Color {

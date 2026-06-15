@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -31,7 +32,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            delay(SPLASH_TIMEOUT_MILLIS)
+            delay(SPLASH_TIMEOUT_MILLIS.milliseconds)
             _uiState.update { currentState ->
                 val nextStartupState = HomeStartupFeedStateReducer.fromTimeout(
                     currentState = currentState.startupFeedState

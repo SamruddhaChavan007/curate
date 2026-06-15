@@ -75,6 +75,7 @@ class SignUpViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
+                        isSignedUp = true,
                         successMessage = "Account created. Check your email if confirmation is required."
                     )
                 }

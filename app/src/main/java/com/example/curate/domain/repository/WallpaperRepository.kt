@@ -12,4 +12,8 @@ interface WallpaperRepository {
     companion object {
         const val DEFAULT_QUERY = "wallpaper"
     }
+
+    fun observeIsFavorite(wallpaperId: String): Flow<Boolean>
+
+    suspend fun toggleFavorite(wallpaper: Wallpaper)
 }

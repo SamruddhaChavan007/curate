@@ -121,8 +121,8 @@ private fun CurateNavKey.toSavedString(): String {
         CurateNavKey.Discover -> "discover"
         CurateNavKey.Search -> "search"
         CurateNavKey.Library -> "library"
-        CurateNavKey.SignIn -> "sign-in"
-        CurateNavKey.SignUp -> "sign-up"
+        is CurateNavKey.SignIn -> "sign-in:${returnToPrevious}"
+        is CurateNavKey.SignUp -> "sign-up:${returnToPrevious}"
         CurateNavKey.Account -> "account"
         is CurateNavKey.WallpaperDetail -> "wallpaper:${wallpaperId.encodeSavedValue()}"
     }
@@ -134,8 +134,10 @@ private fun String.toCurateNavKey(): CurateNavKey {
         this == "discover" -> CurateNavKey.Discover
         this == "search" -> CurateNavKey.Search
         this == "library" -> CurateNavKey.Library
-        this == "sign-in" -> CurateNavKey.SignIn
-        this == "sign-up" -> CurateNavKey.SignUp
+        this == "sign-in" -> CurateNavKey.SignIn()
+        this == "sign-up" -> CurateNavKey.SignUp()
+        startsWith("sign-in:") -> CurateNavKey.SignIn(returnToPrevious = removePrefix("sign-in:").toBoolean())
+        startsWith("sign-up:") -> CurateNavKey.SignUp(returnToPrevious = removePrefix("sign-up:").toBoolean())
         this == "account" -> CurateNavKey.Account
         startsWith("wallpaper:") -> CurateNavKey.WallpaperDetail(removePrefix("wallpaper:").decodeSavedValue())
         else -> CurateNavKey.Home

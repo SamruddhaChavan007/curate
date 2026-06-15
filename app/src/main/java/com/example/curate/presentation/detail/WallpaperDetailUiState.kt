@@ -7,7 +7,8 @@ sealed interface WallpaperDetailUiState {
 
     data class Content(
         val wallpaper: WallpaperUiModel,
-        val backButtonTint: BackButtonTint = BackButtonTint.Light
+        val backButtonTint: BackButtonTint = BackButtonTint.Light,
+        val isFavorite: Boolean = false,
     ) : WallpaperDetailUiState
 
     data class Error(

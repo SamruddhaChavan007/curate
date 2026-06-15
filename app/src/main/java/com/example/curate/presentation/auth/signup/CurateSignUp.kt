@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -47,10 +48,17 @@ import com.example.curate.ui.theme.curateColors
 fun SignUpRoute(
     onBackClick: () -> Unit,
     onSignInClick: () -> Unit,
+    onSignedUp: () -> Unit,
     viewModel: SignUpViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.isSignedUp) {
+        if (uiState.isSignedUp) {
+            onSignedUp()
+        }
+    }
 
     CurateSignUp(
         uiState = uiState,

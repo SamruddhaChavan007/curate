@@ -18,10 +18,10 @@ sealed interface CurateNavKey : NavKey {
     data object Library : CurateNavKey
 
     @Serializable
-    data object SignIn : CurateNavKey
+    data class SignIn(val returnToPrevious: Boolean = false) : CurateNavKey
 
     @Serializable
-    data object SignUp : CurateNavKey
+    data class SignUp(val returnToPrevious: Boolean = false) : CurateNavKey
 
     @Serializable
     data object Account : CurateNavKey

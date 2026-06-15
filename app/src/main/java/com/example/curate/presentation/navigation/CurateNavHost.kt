@@ -86,7 +86,7 @@ fun CurateNavHost(
                 withTimeoutOrNull(1_000L) {
                     snapshotFlow { isTransitionActive }.first { active -> !active }
                 }
-                isBottomBarVisible = true
+                isBottomBarVisible = false
                 isRestoringFromDetail = false
             }
         }
@@ -144,7 +144,7 @@ fun CurateNavHost(
                             onAccountClick = {
                                 when (authState) {
                                     is AuthState.Authenticated -> navigationState.push(CurateNavKey.Account)
-                                    else -> navigationState.push(CurateNavKey.SignIn)
+                                    else -> navigationState.push(CurateNavKey.SignIn())
                                 }
                             }
                         )
@@ -162,18 +162,35 @@ fun CurateNavHost(
                         LibraryRoute(authState = authState)
                     }
 
-                    entry<CurateNavKey.SignIn> {
+                    entry<CurateNavKey.SignIn> { key ->
                         SignInRoute(
                             onBackClick = { navigationState.pop() },
-                            onSignUpClick = { navigationState.push(CurateNavKey.SignUp) },
-                            onSignedIn = { navigationState.popToRoot() }
+                            onSignUpClick = {
+                                navigationState.push(CurateNavKey.SignUp(returnToPrevious = key.returnToPrevious))
+                            },
+                            onSignedIn = {
+                                if (key.returnToPrevious) {
+                                    navigationState.pop()
+                                } else {
+                                    navigationState.popToRoot()
+                                }
+                            }
                         )
                     }
 
-                    entry<CurateNavKey.SignUp> {
+                    entry<CurateNavKey.SignUp> { key ->
                         SignUpRoute(
                             onBackClick = { navigationState.pop() },
-                            onSignInClick = { navigationState.replaceTop(CurateNavKey.SignIn) }
+                            onSignInClick = {
+                                navigationState.replaceTop(CurateNavKey.SignIn(returnToPrevious = key.returnToPrevious))
+                            },
+                            onSignedUp = {
+                                if (key.returnToPrevious) {
+                                    navigationState.pop()
+                                } else {
+                                    navigationState.popToRoot()
+                                }
+                            }
                         )
                     }
 
@@ -194,7 +211,14 @@ fun CurateNavHost(
                             transitionSeedWallpaper = transitionSeedWallpaper,
                             sharedTransitionScope = this@SharedTransitionLayout,
                             animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                            onBackClick = { navigationState.pop() }
+                            authState = authState,
+                            onBackClick = { navigationState.pop() },
+                            onSignInClick = {
+                                navigationState.push(CurateNavKey.SignIn(returnToPrevious = true))
+                            },
+                            onSignUpClick = {
+                                navigationState.push(CurateNavKey.SignUp(returnToPrevious = true))
+                            }
                         )
                     }
                 },
@@ -203,4 +227,3 @@ fun CurateNavHost(
         }
     }
 }
-

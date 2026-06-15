@@ -6,9 +6,12 @@ import androidx.paging.PagingData
 import com.example.curate.domain.model.Wallpaper
 import com.example.curate.domain.repository.WallpaperRepository
 import com.example.curate.domain.usecase.GetWallpaperDetailUseCase
+import com.example.curate.domain.usecase.ObserveWallpaperFavoriteUseCase
+import com.example.curate.domain.usecase.ToggleWallpaperFavoriteUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -84,13 +87,40 @@ class WallpaperDetailViewModelTest {
         assertEquals(1, analyzer.analysisCount)
     }
 
+    @Test
+    fun `new image ready event cancels pending tint analysis`() = runTest(testDispatcher) {
+        val analyzer = FakeContrastAnalyzer(tint = BackButtonTint.Dark)
+        val viewModel = createViewModel(analyzer = analyzer)
+        val bitmap = testBitmap()
+        advanceUntilIdle()
+
+        viewModel.onWallpaperImageReady(
+            wallpaperId = WALLPAPER_ID,
+            bitmap = bitmap,
+            imageBounds = VALID_IMAGE_BOUNDS,
+            buttonBounds = VALID_BUTTON_BOUNDS
+        )
+        viewModel.onWallpaperImageReady(
+            wallpaperId = WALLPAPER_ID,
+            bitmap = bitmap,
+            imageBounds = VALID_IMAGE_BOUNDS,
+            buttonBounds = SECOND_BUTTON_BOUNDS
+        )
+        advanceUntilIdle()
+
+        assertEquals(1, analyzer.analysisCount)
+    }
+
     private fun createViewModel(
+        repository: FakeWallpaperRepository = FakeWallpaperRepository(),
         analyzer: WallpaperButtonContrastAnalyzer = FakeContrastAnalyzer(BackButtonTint.Light)
     ): WallpaperDetailViewModel {
         return WallpaperDetailViewModel(
             wallpaperId = WALLPAPER_ID,
-            getWallpaperDetail = GetWallpaperDetailUseCase(FakeWallpaperRepository()),
-            contrastAnalyzer = analyzer
+            getWallpaperDetail = GetWallpaperDetailUseCase(repository),
+            contrastAnalyzer = analyzer,
+            observeWallpaperFavoriteUseCase = ObserveWallpaperFavoriteUseCase(repository),
+            toggleWallpaperFavoriteUseCase = ToggleWallpaperFavoriteUseCase(repository)
         )
     }
 
@@ -133,9 +163,14 @@ class WallpaperDetailViewModelTest {
                 downloadLocation = "https://example.com/download"
             )
         }
+
+        override fun observeIsFavorite(wallpaperId: String): Flow<Boolean> = flowOf(false)
+
+        override suspend fun toggleFavorite(wallpaper: Wallpaper) = Unit
     }
 }
 
 private const val WALLPAPER_ID = "wallpaper"
 private val VALID_IMAGE_BOUNDS = ImageBounds(left = 0, top = 0, right = 100, bottom = 100)
 private val VALID_BUTTON_BOUNDS = ImageBounds(left = 0, top = 0, right = 48, bottom = 48)
+private val SECOND_BUTTON_BOUNDS = ImageBounds(left = 8, top = 8, right = 56, bottom = 56)
