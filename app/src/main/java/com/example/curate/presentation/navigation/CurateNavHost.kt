@@ -48,27 +48,29 @@ import kotlinx.coroutines.withTimeoutOrNull
 @Composable
 fun CurateNavHost(
     homeViewModel: HomeViewModel,
-    authSessionViewModel: AuthSessionViewModel = hiltViewModel()
+    authSessionViewModel: AuthSessionViewModel = hiltViewModel(),
+    navigationChromeViewModel: CurateNavigationChromeViewModel = hiltViewModel()
 ) {
     val navigationState = rememberSaveable(saver = CurateNavigationState.Saver) {
         CurateNavigationState()
     }
     val authState by authSessionViewModel.authState.collectAsState()
+    val navigationChromeUiState by navigationChromeViewModel.uiState.collectAsState()
     var transitionSeedWallpaper by remember { mutableStateOf<WallpaperUiModel?>(null) }
-    var isBottomBarVisible by rememberSaveable { mutableStateOf(true) }
     var previousKey by remember { mutableStateOf<CurateNavKey?>(null) }
     var isRestoringFromDetail by remember { mutableStateOf(false) }
     val currentKey = navigationState.currentKey
 
     SharedTransitionLayout {
-        val bottomBarScrollConnection = remember(currentKey) {
+        val bottomBarScrollConnection = remember(
+            currentKey,
+            navigationState.isAtTopLevelRoot,
+            navigationChromeViewModel
+        ) {
             object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    if (currentKey == CurateNavKey.Home) {
-                        when {
-                            available.y < 0f -> isBottomBarVisible = false
-                            available.y > 0f -> isBottomBarVisible = true
-                        }
+                    if (navigationState.isAtTopLevelRoot) {
+                        navigationChromeViewModel.onContentScroll(available.y)
                     }
                     return Offset.Zero
                 }
@@ -86,7 +88,7 @@ fun CurateNavHost(
                 withTimeoutOrNull(1_000L) {
                     snapshotFlow { isTransitionActive }.first { active -> !active }
                 }
-                isBottomBarVisible = false
+                navigationChromeViewModel.hideBottomBar()
                 isRestoringFromDetail = false
             }
         }
@@ -96,7 +98,7 @@ fun CurateNavHost(
                 transitionSeedWallpaper = null
             }
             if (navigationState.selectedDestination != TopLevelDestination.FEED) {
-                isBottomBarVisible = true
+                navigationChromeViewModel.showBottomBar()
             }
         }
 
@@ -105,7 +107,7 @@ fun CurateNavHost(
             bottomBar = {
                 if (navigationState.isAtTopLevelRoot && !isRestoringFromDetail) {
                     AnimatedVisibility(
-                        visible = isBottomBarVisible,
+                        visible = navigationChromeUiState.isBottomBarVisible,
                         enter = slideInVertically(initialOffsetY = { it }),
                         exit = slideOutVertically(targetOffsetY = { it })
                     ) {
@@ -113,7 +115,7 @@ fun CurateNavHost(
                             selectedDestination = navigationState.selectedDestination,
                             onDestinationClick = { destination ->
                                 navigationState.select(destination)
-                                isBottomBarVisible = true
+                                navigationChromeViewModel.showBottomBar()
                             }
                         )
                     }
@@ -137,7 +139,7 @@ fun CurateNavHost(
                             authState = authState,
                             isReturningFromDetail = isRestoringFromDetail,
                             onWallpaperClick = { wallpaper ->
-                                isBottomBarVisible = false
+                                navigationChromeViewModel.hideBottomBar()
                                 transitionSeedWallpaper = wallpaper
                                 navigationState.push(CurateNavKey.WallpaperDetail(wallpaper.id))
                             },
@@ -151,7 +153,15 @@ fun CurateNavHost(
                     }
 
                     entry<CurateNavKey.Discover> {
-                        DiscoverRoute()
+                        DiscoverRoute(
+                            authState = authState,
+                            onAccountClick = {
+                                when (authState) {
+                                    is AuthState.Authenticated -> navigationState.push(CurateNavKey.Account)
+                                    else -> navigationState.push(CurateNavKey.SignIn())
+                                }
+                            }
+                        )
                     }
 
                     entry<CurateNavKey.Search> {

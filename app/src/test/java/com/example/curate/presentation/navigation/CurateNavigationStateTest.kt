@@ -12,14 +12,14 @@ class CurateNavigationStateTest {
 
         state.push(CurateNavKey.WallpaperDetail("one"))
         state.select(TopLevelDestination.SEARCH)
-        state.push(CurateNavKey.SignIn)
+        state.push(CurateNavKey.SignIn())
         state.select(TopLevelDestination.FEED)
 
         assertEquals(CurateNavKey.WallpaperDetail("one"), state.currentKey)
 
         state.select(TopLevelDestination.SEARCH)
 
-        assertEquals(CurateNavKey.SignIn, state.currentKey)
+        assertEquals(CurateNavKey.SignIn(), state.currentKey)
     }
 
     @Test
@@ -38,7 +38,7 @@ class CurateNavigationStateTest {
         val state = CurateNavigationState()
         state.push(CurateNavKey.WallpaperDetail("one"))
         state.select(TopLevelDestination.SEARCH)
-        state.push(CurateNavKey.SignIn)
+        state.push(CurateNavKey.SignIn())
 
         assertTrue(state.pop())
 
@@ -53,7 +53,7 @@ class CurateNavigationStateTest {
     fun `pop to root keeps active tab selected`() {
         val state = CurateNavigationState()
         state.select(TopLevelDestination.LIBRARY)
-        state.push(CurateNavKey.SignIn)
+        state.push(CurateNavKey.SignIn())
 
         state.popToRoot()
 
