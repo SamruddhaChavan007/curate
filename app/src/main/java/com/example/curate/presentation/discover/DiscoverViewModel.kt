@@ -2,30 +2,27 @@ package com.example.curate.presentation.discover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.curate.domain.model.safeUserMessage
-import com.example.curate.domain.usecase.GetCollectionsUseCase
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.example.curate.domain.model.TopicsCategory
+import com.example.curate.domain.usecase.GetTopicsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class DiscoverViewModel @Inject constructor(
-    private val getCollections: GetCollectionsUseCase
+    getTopics: GetTopicsUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DiscoverUiState())
     val uiState: StateFlow<DiscoverUiState> = _uiState.asStateFlow()
 
-    init {
-        loadCollections()
-    }
-
-    fun onRetryClick() {
-        loadCollections()
-    }
+    val topics: Flow<PagingData<TopicsCategory>> = getTopics()
+        .cachedIn(viewModelScope)
 
     fun onScrollDirectionChanged(direction: DiscoverScrollDirection) {
         val shouldShowTopBar = direction == DiscoverScrollDirection.Up
@@ -54,36 +51,6 @@ class DiscoverViewModel @Inject constructor(
                     animatedGridItemIds = currentState.animatedGridItemIds + itemId
                 )
             }
-        }
-    }
-
-    private fun loadCollections() {
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    errorMessage = null
-                )
-            }
-
-            getCollections()
-                .onSuccess { collections ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            collections = collections,
-                            errorMessage = null
-                        )
-                    }
-                }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = error.safeUserMessage("Unable to load collections.")
-                        )
-                    }
-                }
         }
     }
 }

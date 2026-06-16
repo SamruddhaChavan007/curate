@@ -31,11 +31,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -202,8 +202,11 @@ private fun ObserveHomeScrollDirection(
     gridState: LazyStaggeredGridState,
     onScrollDirectionChanged: (HomeScrollDirection) -> Unit
 ) {
-    LaunchedEffect(gridState, onScrollDirectionChanged) {
+    val currentOnScrollDirectionChanged by rememberUpdatedState(onScrollDirectionChanged)
+
+    LaunchedEffect(gridState) {
         var previousPosition: Pair<Int, Int>? = null
+        var previousDirection: HomeScrollDirection? = null
         snapshotFlow {
             gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset
         }.collect { currentPosition ->
@@ -214,16 +217,21 @@ private fun ObserveHomeScrollDirection(
                 val previousIndex = previous.first
                 val previousOffset = previous.second
 
-                when {
+                val direction = when {
                     currentIndex > previousIndex ||
-                        (currentIndex == previousIndex && currentOffset > previousOffset) -> {
-                        onScrollDirectionChanged(HomeScrollDirection.Down)
-                    }
+                        (currentIndex == previousIndex && currentOffset > previousOffset) ->
+                        HomeScrollDirection.Down
 
                     currentIndex < previousIndex ||
-                        (currentIndex == previousIndex && currentOffset < previousOffset) -> {
-                        onScrollDirectionChanged(HomeScrollDirection.Up)
-                    }
+                        (currentIndex == previousIndex && currentOffset < previousOffset) ->
+                        HomeScrollDirection.Up
+
+                    else -> null
+                }
+
+                if (direction != null && direction != previousDirection) {
+                    previousDirection = direction
+                    currentOnScrollDirectionChanged(direction)
                 }
             }
             previousPosition = currentPosition
@@ -259,7 +267,6 @@ private fun HomeTopBarOverlay(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .blur(14.dp)
                 .background(topBarGradient)
         )
 

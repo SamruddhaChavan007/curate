@@ -1,12 +1,12 @@
 package com.example.curate.di
 
 import com.example.curate.data.repository.AuthRepositoryImpl
-import com.example.curate.data.repository.CollectionRepositoryImpl
 import com.example.curate.data.repository.CurateRepositoryImpl
+import com.example.curate.data.repository.TopicsRepositoryImpl
 import com.example.curate.data.repository.WallpaperRepositoryImpl
 import com.example.curate.domain.repository.AuthRepository
-import com.example.curate.domain.repository.CollectionRepository
 import com.example.curate.domain.repository.CurateRepository
+import com.example.curate.domain.repository.TopicsRepository
 import com.example.curate.domain.repository.WallpaperRepository
 import dagger.Binds
 import dagger.Module
@@ -37,7 +37,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindCollectionRepository(
-        implementation: CollectionRepositoryImpl
-    ): CollectionRepository
+    abstract fun bindTopicsRepository(
+        implementation: TopicsRepositoryImpl
+    ): TopicsRepository
 }

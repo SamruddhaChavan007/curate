@@ -33,7 +33,7 @@ fun CurateWallpaperImage(
     fallbackColor: Color,
     modifier: Modifier = Modifier,
     fadeInImage: Boolean = true,
-    onBitmapLoaded: (Bitmap) -> Unit = {}
+    onBitmapLoaded: ((Bitmap) -> Unit)? = null
 ) {
     var isImageLoaded by remember(model) { mutableStateOf(false) }
     val imageAlpha by animateFloatAsState(
@@ -66,7 +66,7 @@ fun CurateWallpaperImage(
             contentScale = contentScale,
             onSuccess = { state ->
                 isImageLoaded = true
-                onBitmapLoaded(state.result.image.toReadableBitmap())
+                onBitmapLoaded?.invoke(state.result.image.toReadableBitmap())
             },
             onError = { isImageLoaded = false },
             onLoading = { isImageLoaded = false },

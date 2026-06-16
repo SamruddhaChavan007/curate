@@ -1,7 +1,7 @@
 package com.example.curate.data.remote.unsplash
 
 import com.example.curate.core.config.AppConfig
-import com.example.curate.data.remote.unsplash.dto.CollectionDto
+import com.example.curate.data.remote.unsplash.dto.TopicsDto
 import com.example.curate.data.remote.unsplash.dto.UnsplashPhotoDto
 import com.example.curate.data.remote.unsplash.dto.UnsplashSearchResponseDto
 import io.ktor.client.HttpClient
@@ -48,14 +48,14 @@ class UnsplashApi @Inject constructor(
         const val UNSPLASH_SEARCH_PHOTOS_URL = "https://api.unsplash.com/search/photos"
         const val UNSPLASH_PHOTOS_URL = "https://api.unsplash.com/photos"
 
-        const val UNSPLASH_COLLECTIONS_URL = "https://api.unsplash.com/collections"
+        const val UNSPLASH_TOPICS_URL = "https://api.unsplash.com/topics"
     }
 
-    suspend fun getCollections(page: Int, perPage: Int): List<CollectionDto> {
+    suspend fun getTopics(page: Int, perPage: Int): List<TopicsDto> {
         check(AppConfig.unsplashAccessKey.isNotBlank()) {
             "UNSPLASH_ACCESS_KEY is missing. Set it in local.properties."
         }
-        return httpClient.get(UNSPLASH_COLLECTIONS_URL) {
+        return httpClient.get(UNSPLASH_TOPICS_URL) {
             header("Authorization", "Client-ID ${AppConfig.unsplashAccessKey}")
             parameter("page", page)
             parameter("per_page", perPage)

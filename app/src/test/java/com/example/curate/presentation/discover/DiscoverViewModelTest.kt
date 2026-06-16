@@ -1,8 +1,9 @@
 package com.example.curate.presentation.discover
 
-import com.example.curate.domain.model.WallpaperCategory
-import com.example.curate.domain.repository.CollectionRepository
-import com.example.curate.domain.usecase.GetCollectionsUseCase
+import androidx.paging.PagingData
+import com.example.curate.domain.model.TopicsCategory
+import com.example.curate.domain.repository.TopicsRepository
+import com.example.curate.domain.usecase.GetTopicsUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -10,6 +11,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -65,13 +68,13 @@ class DiscoverViewModelTest {
     }
 
     @Test
-    fun `completed grid item animation records collection id`() = runTest(dispatcher) {
+    fun `completed grid item animation records topic id`() = runTest(dispatcher) {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.onGridItemAnimationCompleted("collection-one")
+        viewModel.onGridItemAnimationCompleted("topic-one")
 
-        assertEquals(setOf("collection-one"), viewModel.uiState.value.animatedGridItemIds)
+        assertEquals(setOf("topic-one"), viewModel.uiState.value.animatedGridItemIds)
     }
 
     @Test
@@ -79,26 +82,23 @@ class DiscoverViewModelTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.onGridItemAnimationCompleted("collection-one")
-        viewModel.onGridItemAnimationCompleted("collection-one")
+        viewModel.onGridItemAnimationCompleted("topic-one")
+        viewModel.onGridItemAnimationCompleted("topic-one")
 
-        assertEquals(setOf("collection-one"), viewModel.uiState.value.animatedGridItemIds)
+        assertEquals(setOf("topic-one"), viewModel.uiState.value.animatedGridItemIds)
     }
 
     private fun createViewModel(
-        repository: CollectionRepository = FakeCollectionRepository()
+        repository: TopicsRepository = FakeTopicsRepository()
     ): DiscoverViewModel {
         return DiscoverViewModel(
-            getCollections = GetCollectionsUseCase(repository)
+            getTopics = GetTopicsUseCase(repository)
         )
     }
 
-    private class FakeCollectionRepository : CollectionRepository {
-        override suspend fun fetchCategories(
-            page: Int,
-            perPage: Int
-        ): Result<List<WallpaperCategory>> {
-            return Result.success(emptyList())
+    private class FakeTopicsRepository : TopicsRepository {
+        override fun getTopicFeed(): Flow<PagingData<TopicsCategory>> {
+            return flowOf(PagingData.empty())
         }
     }
 }

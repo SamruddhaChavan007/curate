@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class CollectionDto(
+data class TopicsDto(
     @SerialName("id") val id: String,
     @SerialName("title") val title: String,
     @SerialName("description") val descriptions: String?,
@@ -15,7 +15,7 @@ data class CollectionDto(
 @Serializable
 data class CoverPhotoDto(
     @SerialName("id") val id: String,
-    @SerialName("blur_hash") val blurHash: String,
+    @SerialName("blur_hash") val blurHash: String?,
     @SerialName("urls") val urls: ImageUrlDto
 )
 

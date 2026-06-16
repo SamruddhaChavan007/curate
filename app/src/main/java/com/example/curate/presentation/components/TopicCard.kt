@@ -21,13 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.curate.domain.model.WallpaperCategory
+import com.example.curate.domain.model.TopicsCategory
 import com.example.curate.ui.theme.CurateTheme
 import com.example.curate.ui.theme.curateColors
 
 @Composable
-fun CollectionCard(
-    collection: WallpaperCategory,
+fun TopicCard(
+    topic: TopicsCategory,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -42,9 +42,9 @@ fun CollectionCard(
             .clickable(onClick = onClick)
     ) {
         CurateWallpaperImage(
-            model = collection.imageUrl,
-            contentDescription = collection.title,
-            blurHash = collection.blurHash,
+            model = topic.imageUrl,
+            contentDescription = topic.title,
+            blurHash = topic.blurHash,
             contentScale = ContentScale.Crop,
             fallbackColor = curateColors.chrome,
             modifier = Modifier.matchParentSize()
@@ -61,14 +61,14 @@ fun CollectionCard(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
                 Text(
-                    text = collection.title,
+                    text = topic.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = collection.countLabel,
+                    text = topic.countLabel,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -80,7 +80,7 @@ fun CollectionCard(
 
 @Preview
 @Composable
-fun PreviewCollectionCard() {
+fun PreviewTopicCard() {
     CurateTheme(
         dynamicColor = false
     ) {
@@ -91,8 +91,8 @@ fun PreviewCollectionCard() {
                 modifier = Modifier.fillMaxWidth()
                     .padding(it)
             ) {
-                CollectionCard(
-                    collection = WallpaperCategory(
+                TopicCard(
+                    topic = TopicsCategory(
                         id = "1",
                         title = "Nature",
                         countLabel = "48 wallpapers",

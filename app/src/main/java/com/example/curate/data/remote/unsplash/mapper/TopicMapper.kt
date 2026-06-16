@@ -1,10 +1,10 @@
 package com.example.curate.data.remote.unsplash.mapper
 
-import com.example.curate.data.remote.unsplash.dto.CollectionDto
-import com.example.curate.domain.model.WallpaperCategory
+import com.example.curate.data.remote.unsplash.dto.TopicsDto
+import com.example.curate.domain.model.TopicsCategory
 
-fun CollectionDto.toDomain(): WallpaperCategory {
-    return WallpaperCategory(
+fun TopicsDto.toDomain(): TopicsCategory {
+    return TopicsCategory(
         id = this.id,
         title = this.title,
         countLabel = "${this.totalPhotos} wallpapers",

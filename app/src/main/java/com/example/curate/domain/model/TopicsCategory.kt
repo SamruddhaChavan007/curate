@@ -1,6 +1,6 @@
 package com.example.curate.domain.model
 
-data class WallpaperCategory(
+data class TopicsCategory(
     val id: String,
     val title: String,
     val countLabel: String,
