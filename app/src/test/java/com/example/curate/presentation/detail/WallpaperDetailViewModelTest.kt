@@ -151,6 +151,10 @@ class WallpaperDetailViewModelTest {
             error("Not used")
         }
 
+        override suspend fun getSplashWallpapers(query: String, count: Int): List<Wallpaper> {
+            error("Not used")
+        }
+
         override suspend fun getWallpaper(id: String): Wallpaper {
             return Wallpaper(
                 id = id,

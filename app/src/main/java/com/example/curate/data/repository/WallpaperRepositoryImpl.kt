@@ -10,6 +10,7 @@ import com.example.curate.data.paging.WallpaperPagingSource
 import com.example.curate.data.remote.supabase.favorite.SupabaseFavoriteGateway
 import com.example.curate.data.remote.unsplash.UnsplashApi
 import com.example.curate.data.remote.unsplash.mapper.toDomain
+import com.example.curate.data.remote.unsplash.mapper.toSplashDomain
 import com.example.curate.domain.model.AuthState
 import com.example.curate.domain.model.Wallpaper
 import com.example.curate.domain.repository.AuthRepository
@@ -42,6 +43,18 @@ class WallpaperRepositoryImpl @Inject constructor(
         ).flow
     }
 
+    override suspend fun getSplashWallpapers(query: String, count: Int): List<Wallpaper> {
+        return try {
+            api.searchPhotos(
+                query = query,
+                page = SPLASH_PAGE,
+                perPage = count
+            ).results.map { photo -> photo.toSplashDomain() }
+        } catch (error: Exception) {
+            throw AppErrorMapper.toException(error)
+        }
+    }
+
     override suspend fun getWallpaper(id: String): Wallpaper {
         return try {
             api.getPhoto(id).toDomain()
@@ -52,6 +65,7 @@ class WallpaperRepositoryImpl @Inject constructor(
 
     private companion object {
         const val PAGE_SIZE = 20
+        const val SPLASH_PAGE = 1
     }
 
     override fun observeIsFavorite(wallpaperId: String): Flow<Boolean> {

@@ -12,7 +12,7 @@ The app currently covers wallpaper discovery, detail viewing, and user authentic
 - Shared element transitions from grid images into the detail screen.
 - Detail image loading that uses the cached preview image while the full image loads.
 - Dynamic button contrast on the detail screen via the Palette API — icon tints adapt to the wallpaper's dominant colors.
-- Animated splash screen with a condition-gated exit tied to the home feed's initial load state.
+- Compose cinematic splash screen with bundled artwork and a timed transition into the app.
 - Email/password sign-in and sign-up backed by Supabase Auth, with session refresh and sign-out.
 - Auth state machine (`Loading → Authenticated / Unauthenticated / Error / ConfigUnavailable`) propagated app-wide via `AuthSessionViewModel`.
 - Library screen gated behind authentication, prompting sign-in when the user is unauthenticated.
@@ -29,7 +29,7 @@ The app currently covers wallpaper discovery, detail viewing, and user authentic
 | Images | Coil 3, BlurHash, AndroidX Palette |
 | Pagination | Paging 3 |
 | Backend services | Unsplash API, Supabase Kotlin (Auth) |
-| Splash screen | AndroidX SplashScreen |
+| Splash screen | Jetpack Compose |
 | Logging | Timber |
 
 ## Requirements

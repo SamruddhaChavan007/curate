@@ -15,3 +15,18 @@ fun UnsplashPhotoDto.toDomain(): Wallpaper {
         downloadLocation = links.downloadLocation
     )
 }
+
+fun UnsplashPhotoDto.toSplashDomain(): Wallpaper {
+    val previewUrl = urls.small.ifBlank { urls.regular }
+
+    return Wallpaper(
+        id = id,
+        width = width,
+        height = height,
+        previewUrl = previewUrl,
+        fullUrl = urls.full.ifBlank { urls.regular.ifBlank { previewUrl } },
+        blurHash = blurHash,
+        photographerName = user.name.ifBlank { "Unknown photographer" },
+        downloadLocation = links.downloadLocation
+    )
+}

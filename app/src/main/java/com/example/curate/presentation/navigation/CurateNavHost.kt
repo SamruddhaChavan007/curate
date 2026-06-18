@@ -101,7 +101,11 @@ fun CurateNavHost(
             if (currentKey !is CurateNavKey.WallpaperDetail) {
                 transitionSeedWallpaper = null
             }
-            if (navigationState.selectedDestination != TopLevelDestination.FEED) {
+            if (
+                !isRestoringFromDetail &&
+                currentKey !is CurateNavKey.WallpaperDetail &&
+                navigationState.selectedDestination != TopLevelDestination.FEED
+            ) {
                 navigationChromeViewModel.showBottomBar()
             }
         }
@@ -244,6 +248,8 @@ fun CurateNavHost(
                             animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                             authState = authState,
                             onExitRequested = { exitType ->
+                                isRestoringFromDetail = true
+                                navigationChromeViewModel.hideBottomBar()
                                 lastWallpaperExitType = exitType
                                 navigationState.pop()
                             },

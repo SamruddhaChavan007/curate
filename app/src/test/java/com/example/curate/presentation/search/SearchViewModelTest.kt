@@ -218,6 +218,10 @@ class SearchViewModelTest {
             return flowOf(PagingData.empty())
         }
 
+        override suspend fun getSplashWallpapers(query: String, count: Int): List<Wallpaper> {
+            return emptyList()
+        }
+
         override suspend fun getWallpaper(id: String): Wallpaper {
             return Wallpaper(
                 id = id,
