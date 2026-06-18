@@ -35,6 +35,7 @@ import com.example.curate.presentation.auth.signin.SignInRoute
 import com.example.curate.presentation.auth.signup.SignUpRoute
 import com.example.curate.presentation.components.CurateBottomNavigationBar
 import com.example.curate.presentation.detail.WallpaperDetailRoute
+import com.example.curate.presentation.detail.WallpaperExitType
 import com.example.curate.presentation.discover.DiscoverRoute
 import com.example.curate.presentation.home.HomeRoute
 import com.example.curate.presentation.home.HomeViewModel
@@ -57,6 +58,7 @@ fun CurateNavHost(
     val authState by authSessionViewModel.authState.collectAsState()
     val navigationChromeUiState by navigationChromeViewModel.uiState.collectAsState()
     var transitionSeedWallpaper by remember { mutableStateOf<WallpaperUiModel?>(null) }
+    var lastWallpaperExitType by remember { mutableStateOf(WallpaperExitType.SHARED_ELEMENT) }
     var previousKey by remember { mutableStateOf<CurateNavKey?>(null) }
     var isRestoringFromDetail by remember { mutableStateOf(false) }
     val currentKey = navigationState.currentKey
@@ -84,9 +86,11 @@ fun CurateNavHost(
 
             if (wasDetail && !isDetail) {
                 isRestoringFromDetail = true
-                withFrameNanos { }
-                withTimeoutOrNull(1_000L) {
-                    snapshotFlow { isTransitionActive }.first { active -> !active }
+                if (lastWallpaperExitType == WallpaperExitType.SHARED_ELEMENT) {
+                    withFrameNanos { }
+                    withTimeoutOrNull(1_000L) {
+                        snapshotFlow { isTransitionActive }.first { active -> !active }
+                    }
                 }
                 navigationChromeViewModel.hideBottomBar()
                 isRestoringFromDetail = false
@@ -137,10 +141,13 @@ fun CurateNavHost(
                             sharedTransitionScope = this@SharedTransitionLayout,
                             animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                             authState = authState,
+                            isTopBarVisible = navigationChromeUiState.isBottomBarVisible,
                             isReturningFromDetail = isRestoringFromDetail,
+                            onScrollDelta = navigationChromeViewModel::onContentScroll,
                             onWallpaperClick = { wallpaper ->
                                 navigationChromeViewModel.hideBottomBar()
                                 transitionSeedWallpaper = wallpaper
+                                lastWallpaperExitType = WallpaperExitType.SHARED_ELEMENT
                                 navigationState.push(CurateNavKey.WallpaperDetail(wallpaper.id))
                             },
                             onAccountClick = {
@@ -155,6 +162,8 @@ fun CurateNavHost(
                     entry<CurateNavKey.Discover> {
                         DiscoverRoute(
                             authState = authState,
+                            isTopBarVisible = navigationChromeUiState.isBottomBarVisible,
+                            onScrollDelta = navigationChromeViewModel::onContentScroll,
                             onAccountClick = {
                                 when (authState) {
                                     is AuthState.Authenticated -> navigationState.push(CurateNavKey.Account)
@@ -165,7 +174,19 @@ fun CurateNavHost(
                     }
 
                     entry<CurateNavKey.Search> {
-                        SearchRoute()
+                        SearchRoute(
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                            isTopBarVisible = navigationChromeUiState.isBottomBarVisible,
+                            isReturningFromDetail = isRestoringFromDetail,
+                            onScrollDelta = navigationChromeViewModel::onContentScroll,
+                            onWallpaperClick = { wallpaper ->
+                                navigationChromeViewModel.hideBottomBar()
+                                transitionSeedWallpaper = wallpaper
+                                lastWallpaperExitType = WallpaperExitType.SHARED_ELEMENT
+                                navigationState.push(CurateNavKey.WallpaperDetail(wallpaper.id))
+                            }
+                        )
                     }
 
                     entry<CurateNavKey.Library> {
@@ -222,7 +243,10 @@ fun CurateNavHost(
                             sharedTransitionScope = this@SharedTransitionLayout,
                             animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                             authState = authState,
-                            onBackClick = { navigationState.pop() },
+                            onExitRequested = { exitType ->
+                                lastWallpaperExitType = exitType
+                                navigationState.pop()
+                            },
                             onSignInClick = {
                                 navigationState.push(CurateNavKey.SignIn(returnToPrevious = true))
                             },

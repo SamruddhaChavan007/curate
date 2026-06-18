@@ -63,7 +63,9 @@ fun HomeRoute(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     authState: AuthState,
+    isTopBarVisible: Boolean,
     isReturningFromDetail: Boolean = false,
+    onScrollDelta: (Float) -> Unit,
     onWallpaperClick: (WallpaperUiModel) -> Unit,
     onAccountClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -82,6 +84,8 @@ fun HomeRoute(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         authState = authState,
+        isTopBarVisible = isTopBarVisible,
+        onScrollDelta = onScrollDelta,
         onWallpaperClick = onWallpaperClick,
         onAccountClick = onAccountClick,
         onScrollDirectionChanged = viewModel::onScrollDirectionChanged,
@@ -99,6 +103,8 @@ fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     authState: AuthState,
+    isTopBarVisible: Boolean,
+    onScrollDelta: (Float) -> Unit,
     onWallpaperClick: (WallpaperUiModel) -> Unit,
     onAccountClick: () -> Unit,
     onScrollDirectionChanged: (HomeScrollDirection) -> Unit,
@@ -117,7 +123,7 @@ fun HomeScreen(
     val topBarOverlayHeight = statusBarTopPadding + topBarHeight
     val topBarOverlayHeightPx = with(density) { topBarOverlayHeight.toPx() }
     val animatedGridViewportTopOffsetPx by animateFloatAsState(
-        targetValue = if (uiState.isTopBarVisible) topBarOverlayHeightPx else 0f,
+        targetValue = if (isTopBarVisible) topBarOverlayHeightPx else 0f,
         animationSpec = if (isReturningFromDetail) snap() else tween(durationMillis = 300),
         label = "HomeGridViewportTopOffset"
     )
@@ -130,6 +136,7 @@ fun HomeScreen(
 
     ObserveHomeScrollDirection(
         gridState = gridState,
+        onScrollDelta = onScrollDelta,
         onScrollDirectionChanged = onScrollDirectionChanged
     )
 
@@ -175,7 +182,7 @@ fun HomeScreen(
                     )
 
                     androidx.compose.animation.AnimatedVisibility(
-                        visible = uiState.isTopBarVisible,
+                        visible = isTopBarVisible,
                         enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
                         exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
                         modifier = Modifier
@@ -200,8 +207,10 @@ fun HomeScreen(
 @Composable
 private fun ObserveHomeScrollDirection(
     gridState: LazyStaggeredGridState,
+    onScrollDelta: (Float) -> Unit,
     onScrollDirectionChanged: (HomeScrollDirection) -> Unit
 ) {
+    val currentOnScrollDelta by rememberUpdatedState(onScrollDelta)
     val currentOnScrollDirectionChanged by rememberUpdatedState(onScrollDirectionChanged)
 
     LaunchedEffect(gridState) {
@@ -231,6 +240,12 @@ private fun ObserveHomeScrollDirection(
 
                 if (direction != null && direction != previousDirection) {
                     previousDirection = direction
+                    currentOnScrollDelta(
+                        when (direction) {
+                            HomeScrollDirection.Down -> -1f
+                            HomeScrollDirection.Up -> 1f
+                        }
+                    )
                     currentOnScrollDirectionChanged(direction)
                 }
             }

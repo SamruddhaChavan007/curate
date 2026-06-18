@@ -56,6 +56,8 @@ import kotlin.math.roundToInt
 @Composable
 fun DiscoverRoute(
     authState: AuthState,
+    isTopBarVisible: Boolean,
+    onScrollDelta: (Float) -> Unit,
     onAccountClick: () -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
@@ -66,6 +68,8 @@ fun DiscoverRoute(
     DiscoverScreen(
         topics = topics,
         uiState = uiState,
+        isTopBarVisible = isTopBarVisible,
+        onScrollDelta = onScrollDelta,
         onScrollDirectionChanged = viewModel::onScrollDirectionChanged,
         onGridItemAnimationCompleted = viewModel::onGridItemAnimationCompleted,
         authState = authState,
@@ -78,6 +82,8 @@ fun DiscoverRoute(
 fun DiscoverScreen(
     topics: LazyPagingItems<TopicsCategory>,
     uiState: DiscoverUiState,
+    isTopBarVisible: Boolean,
+    onScrollDelta: (Float) -> Unit,
     onScrollDirectionChanged: (DiscoverScrollDirection) -> Unit,
     onGridItemAnimationCompleted: (String) -> Unit,
     authState: AuthState,
@@ -96,13 +102,14 @@ fun DiscoverScreen(
     val topBarOverlayHeight = statusBarTopPadding + topBarHeight
     val topBarOverlayHeightPx = with(density) { topBarOverlayHeight.toPx() }
     val animatedGridViewportTopOffsetPx by animateFloatAsState(
-        targetValue = if (uiState.isTopBarVisible) topBarOverlayHeightPx else 0f,
+        targetValue = if (isTopBarVisible) topBarOverlayHeightPx else 0f,
         animationSpec = tween(durationMillis = 300),
         label = "DiscoverGridViewportTopOffset"
     )
 
     ObserveDiscoverScrollDirection(
         gridState = gridState,
+        onScrollDelta = onScrollDelta,
         onScrollDirectionChanged = onScrollDirectionChanged
     )
 
@@ -147,7 +154,7 @@ fun DiscoverScreen(
 
             if (topics.itemCount > 0) {
                 AnimatedVisibility(
-                    visible = uiState.isTopBarVisible,
+                    visible = isTopBarVisible,
                     enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
                     exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
                     modifier = Modifier.align(Alignment.TopCenter)
@@ -214,8 +221,10 @@ private fun DiscoverTopBarOverlay(
 @Composable
 private fun ObserveDiscoverScrollDirection(
     gridState: LazyStaggeredGridState,
+    onScrollDelta: (Float) -> Unit,
     onScrollDirectionChanged: (DiscoverScrollDirection) -> Unit
 ) {
+    val currentOnScrollDelta by rememberUpdatedState(onScrollDelta)
     val currentOnScrollDirectionChanged by rememberUpdatedState(onScrollDirectionChanged)
 
     LaunchedEffect(gridState) {
@@ -245,6 +254,12 @@ private fun ObserveDiscoverScrollDirection(
 
                 if (direction != null && direction != previousDirection) {
                     previousDirection = direction
+                    currentOnScrollDelta(
+                        when (direction) {
+                            DiscoverScrollDirection.Down -> -1f
+                            DiscoverScrollDirection.Up -> 1f
+                        }
+                    )
                     currentOnScrollDirectionChanged(direction)
                 }
             }

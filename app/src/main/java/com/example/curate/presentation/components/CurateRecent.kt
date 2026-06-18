@@ -28,19 +28,24 @@ import com.example.curate.ui.theme.CurateTheme
 import com.example.curate.ui.theme.curateColors
 
 @Composable
-fun CurateRecent() {
+fun CurateRecent(
+    query: String,
+    onClick: () -> Unit,
+    onClearClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val curateColors = MaterialTheme.curateColors
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(6.dp)
-            .clickable {},
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.AccessTime,
-            contentDescription = "Recents",
+            contentDescription = "Recent search",
             tint = curateColors.onFaint,
             modifier = Modifier.size(12.dp)
         )
@@ -48,27 +53,19 @@ fun CurateRecent() {
         Spacer(Modifier.width(4.dp))
 
         Text(
-            text = "neon city",
+            text = query,
             color = curateColors.onSurface,
             style = MaterialTheme.typography.headlineSmall
         )
 
         Spacer(Modifier.weight(1f))
 
-        Text(
-            text = "H", // Hours
-            color = curateColors.onFaint,
-            style = MaterialTheme.typography.bodyMedium
-        )
-
-        Spacer(Modifier.width(4.dp))
-
         IconButton(
-            onClick = { }
+            onClick = onClearClick
         ) {
             Icon(
                 imageVector = Icons.Default.Clear,
-                contentDescription = "Clear Recent",
+                contentDescription = "Clear recent search",
                 tint = curateColors.onFaint,
                 modifier = Modifier.size(12.dp)
             )
@@ -98,7 +95,11 @@ fun PreviewCurateRecent() {
                     .fillMaxSize()
                     .padding(it)
             ) {
-                CurateRecent()
+                CurateRecent(
+                    query = "neon city",
+                    onClick = {},
+                    onClearClick = {}
+                )
             }
         }
     }

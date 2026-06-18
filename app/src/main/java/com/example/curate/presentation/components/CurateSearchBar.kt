@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Mic
@@ -22,6 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.curate.ui.theme.CurateTheme
@@ -33,9 +39,11 @@ fun CurateSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    onFocusChange: (Boolean) -> Unit = {}
+    onFocusChange: (Boolean) -> Unit = {},
+    onSearch: () -> Unit = {}
 ) {
     val curateColors = MaterialTheme.curateColors
+    val focusManager = LocalFocusManager.current
 
     TextField(
         value = query,
@@ -47,6 +55,22 @@ fun CurateSearchBar(
             .onFocusChanged { onFocusChange(it.isFocused) },
         shape = RoundedCornerShape(30.dp),
         placeholder = { Text("Search...", color = curateColors.onSubtle) },
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Words,
+            autoCorrectEnabled = false,
+            keyboardType = KeyboardType.Text,
+            imeAction = ImeAction.Search
+        ),
+        keyboardActions = KeyboardActions(
+            onDone = {
+                onSearch()
+                focusManager.clearFocus()
+            },
+            onSearch = {
+                onSearch()
+                focusManager.clearFocus()
+            }
+        ),
         colors = TextFieldDefaults.colors(
             focusedTextColor = curateColors.onSurface,
             unfocusedTextColor = curateColors.onSurface,
@@ -82,7 +106,8 @@ fun CurateSearchBar(
                 }
             } else {
                 IconButton(
-                    onClick = { }
+                    onClick = { },
+                    enabled = false
                 ) {
                     Icon(
                         imageVector = Icons.Default.Mic,

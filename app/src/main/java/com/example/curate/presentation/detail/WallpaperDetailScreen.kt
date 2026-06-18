@@ -11,7 +11,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -53,15 +52,18 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.request.ImageRequest
@@ -75,7 +77,9 @@ import com.example.curate.presentation.home.WallpaperUiModel
 import com.example.curate.ui.theme.curateColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -85,7 +89,7 @@ fun WallpaperDetailRoute(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     authState: AuthState,
-    onBackClick: () -> Unit,
+    onExitRequested: (WallpaperExitType) -> Unit,
     onSignInClick: () -> Unit,
     onSignUpClick: () -> Unit,
     viewModel: WallpaperDetailViewModel = hiltViewModel<WallpaperDetailViewModel, WallpaperDetailViewModel.Factory>(
@@ -118,7 +122,7 @@ fun WallpaperDetailRoute(
             animatedVisibilityScope = animatedVisibilityScope,
             backButtonTint = backButtonTint,
             isFavorite = isAuthenticated && isFavorite,
-            onBackClick = onBackClick,
+            onExitRequested = onExitRequested,
             onFavoriteClick = {
                 if (isAuthenticated) {
                     viewModel.onFavoriteClick()
@@ -162,7 +166,7 @@ fun WallpaperDetailRoute(
         is WallpaperDetailUiState.Error -> CurateMessageContent(
             message = state.message,
             actionLabel = "Back",
-            onAction = onBackClick,
+            onAction = { onExitRequested(WallpaperExitType.SHARED_ELEMENT) },
             modifier = modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.statusBars)
@@ -180,7 +184,7 @@ fun WallpaperDetailScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     backButtonTint: BackButtonTint,
     isFavorite: Boolean,
-    onBackClick: () -> Unit,
+    onExitRequested: (WallpaperExitType) -> Unit,
     onFavoriteClick: () -> Unit,
     onDownloadClick: () -> Unit,
     onWallpaperImageReady: (String, Bitmap, ImageBounds, ImageBounds) -> Unit,
@@ -189,30 +193,42 @@ fun WallpaperDetailScreen(
     val transitionShape = RoundedCornerShape(8.dp)
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
-    val dismissThresholdPx = with(density) { DragDismissThreshold.toPx() }
-    val dragOffsetY = remember { Animatable(0f) }
-    var isExitRequested by remember { mutableStateOf(false) }
+    val fallbackDismissThresholdPx = with(density) { DragDismissFallbackThreshold.toPx() }
+    val offsetX = remember { Animatable(0f) }
+    val offsetY = remember { Animatable(0f) }
+    val rotation = remember { Animatable(0f) }
+    val scale = remember { Animatable(1f) }
+    val backgroundAlpha = remember { Animatable(1f) }
+    val velocityTracker = remember { VelocityTracker() }
+    var containerSize by remember { mutableStateOf(IntSize.Zero) }
+    var requestedExitType by remember { mutableStateOf<WallpaperExitType?>(null) }
     var loadedBitmap by remember(wallpaper.id) { mutableStateOf<Bitmap?>(null) }
     var imageBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
     var buttonBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
     var bottomBarBounds by remember(wallpaper.id) { mutableStateOf<ImageBounds?>(null) }
-    val dismissProgress = (dragOffsetY.value / dismissThresholdPx).coerceIn(0f, 1f)
-    val contentScale = 1f - (dismissProgress * DragDismissScaleRange)
-    val currentOnBackClick by rememberUpdatedState(onBackClick)
+    val screenWidthPx = containerSize.width.takeIf { it > 0 }?.toFloat() ?: 1f
+    val screenHeightPx = containerSize.height.takeIf { it > 0 }?.toFloat() ?: 1f
+    val offsetThresholdX = screenWidthPx * DragDismissOffsetThresholdRatio
+    val offsetThresholdY = screenHeightPx * DragDismissOffsetThresholdRatio
+    val dismissThresholdPx = minOf(offsetThresholdX, offsetThresholdY).takeIf { it > 0f }
+        ?: fallbackDismissThresholdPx
+    val dragDistance = sqrt(offsetX.value * offsetX.value + offsetY.value * offsetY.value)
+    val dismissProgress = (dragDistance / dismissThresholdPx).coerceIn(0f, 1f)
+    val currentOnExitRequested by rememberUpdatedState(onExitRequested)
     val chromeAlpha by animateFloatAsState(
-        targetValue = if (isExitRequested) 0f else 1f,
+        targetValue = if (requestedExitType != null) 0f else 1f,
         animationSpec = tween(durationMillis = DetailExitChromeFadeMillis),
         label = "DetailExitChromeAlpha"
     )
-    val requestExit = remember {
+    val requestSharedElementExit = remember {
         {
-            if (!isExitRequested) {
-                isExitRequested = true
+            if (requestedExitType == null) {
+                requestedExitType = WallpaperExitType.SHARED_ELEMENT
             }
         }
     }
 
-    BackHandler(onBack = requestExit)
+    BackHandler(onBack = requestSharedElementExit)
 
     LaunchedEffect(wallpaper.id, loadedBitmap, imageBounds, buttonBounds) {
         val bitmap = loadedBitmap
@@ -223,56 +239,168 @@ fun WallpaperDetailScreen(
         }
     }
 
-    LaunchedEffect(isExitRequested) {
-        if (isExitRequested) {
+    LaunchedEffect(requestedExitType) {
+        if (requestedExitType == WallpaperExitType.SHARED_ELEMENT) {
             delay(DetailExitChromeFadeMillis.toLong())
-            currentOnBackClick()
+            currentOnExitRequested(WallpaperExitType.SHARED_ELEMENT)
         }
     }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = chromeAlpha * (1f - dismissProgress * DragDismissBackgroundFade)))
-            .pointerInput(dismissThresholdPx) {
-                detectVerticalDragGestures(
-                    onVerticalDrag = { change, dragAmount ->
+            .onSizeChanged { containerSize = it }
+            .pointerInput(screenWidthPx, screenHeightPx) {
+                detectDragGestures(
+                    onDragStart = {
+                        velocityTracker.resetTracking()
+                    },
+                    onDrag = { change, dragAmount ->
                         change.consume()
+                        velocityTracker.addPosition(
+                            timeMillis = change.uptimeMillis,
+                            position = change.position
+                        )
                         coroutineScope.launch {
-                            val nextOffset = (dragOffsetY.value + dragAmount).coerceAtLeast(0f)
-                            dragOffsetY.snapTo(nextOffset)
+                            val nextOffsetX = offsetX.value + dragAmount.x
+                            val nextOffsetY = offsetY.value + dragAmount.y
+                            offsetX.snapTo(nextOffsetX)
+                            offsetY.snapTo(nextOffsetY)
+
+                            val nextDistance = sqrt(nextOffsetX * nextOffsetX + nextOffsetY * nextOffsetY)
+                            val maxDistance = sqrt(screenWidthPx * screenWidthPx + screenHeightPx * screenHeightPx)
+                                .coerceAtLeast(1f)
+                            val dragRatio = (nextDistance / maxDistance).coerceIn(0f, 1f)
+                            rotation.snapTo((nextOffsetX / screenWidthPx) * DragDismissMaxRotationDegrees)
+                            scale.snapTo(1f - dragRatio * DragDismissScaleRange)
+                            backgroundAlpha.snapTo((1f - dragRatio * DragDismissBackgroundFadeMultiplier).coerceIn(0f, 1f))
                         }
                     },
                     onDragEnd = {
-                        if (dragOffsetY.value >= dismissThresholdPx && !isExitRequested) {
-                            requestExit()
-                        } else {
-                            coroutineScope.launch {
-                                dragOffsetY.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioNoBouncy,
-                                        stiffness = Spring.StiffnessMediumLow
-                                    )
+                        if (requestedExitType == null) {
+                            val velocity = velocityTracker.calculateVelocity()
+                            val speed = sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+                            val shouldDismissByVelocity = speed > DragDismissVelocityThreshold
+                            val shouldDismissByOffset = abs(offsetX.value) > offsetThresholdX ||
+                                abs(offsetY.value) > offsetThresholdY
+
+                            if (shouldDismissByVelocity || shouldDismissByOffset) {
+                                requestedExitType = WallpaperExitType.SWIPE_TO_DISMISS
+                                val (targetX, targetY) = computeDismissTarget(
+                                    vx = velocity.x,
+                                    vy = velocity.y,
+                                    currentOffsetX = offsetX.value,
+                                    currentOffsetY = offsetY.value,
+                                    screenWidthPx = screenWidthPx,
+                                    screenHeightPx = screenHeightPx
                                 )
+                                val targetRotation = (targetX / screenWidthPx) *
+                                    DragDismissMaxRotationDegrees *
+                                    DragDismissExitRotationMultiplier
+
+                                coroutineScope.launch {
+                                    kotlinx.coroutines.coroutineScope {
+                                        launch {
+                                            offsetX.animateTo(
+                                                targetValue = targetX,
+                                                animationSpec = tween(durationMillis = DragDismissFlingAnimationMillis)
+                                            )
+                                        }
+                                        launch {
+                                            offsetY.animateTo(
+                                                targetValue = targetY,
+                                                animationSpec = tween(durationMillis = DragDismissFlingAnimationMillis)
+                                            )
+                                        }
+                                        launch {
+                                            rotation.animateTo(
+                                                targetValue = targetRotation,
+                                                animationSpec = tween(durationMillis = DragDismissFlingAnimationMillis)
+                                            )
+                                        }
+                                        launch {
+                                            scale.animateTo(
+                                                targetValue = DragDismissExitScale,
+                                                animationSpec = tween(durationMillis = DragDismissFlingAnimationMillis)
+                                            )
+                                        }
+                                        launch {
+                                            backgroundAlpha.animateTo(
+                                                targetValue = 0f,
+                                                animationSpec = tween(durationMillis = DragDismissFlingAnimationMillis)
+                                            )
+                                        }
+                                    }
+                                    currentOnExitRequested(WallpaperExitType.SWIPE_TO_DISMISS)
+                                }
+                            } else {
+                                coroutineScope.launch {
+                                    springBackDismissGesture(
+                                        offsetX = offsetX,
+                                        offsetY = offsetY,
+                                        rotation = rotation,
+                                        scale = scale,
+                                        backgroundAlpha = backgroundAlpha
+                                    )
+                                }
                             }
                         }
                     },
                     onDragCancel = {
                         coroutineScope.launch {
-                            dragOffsetY.animateTo(
-                                targetValue = 0f,
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                )
+                            springBackDismissGesture(
+                                offsetX = offsetX,
+                                offsetY = offsetY,
+                                rotation = rotation,
+                                scale = scale,
+                                backgroundAlpha = backgroundAlpha
                             )
                         }
                     }
                 )
             }
     ) {
+        CurateWallpaperImage(
+            model = wallpaper.previewUrl,
+            contentDescription = null,
+            blurHash = wallpaper.blurHash,
+            contentScale = ContentScale.Crop,
+            fallbackColor = Color.Black,
+            fadeInImage = false,
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(DragDismissBackdropBlurRadius)
+                .graphicsLayer {
+                    alpha = DragDismissBackdropAlpha
+                    scaleX = DragDismissBackdropScale
+                    scaleY = DragDismissBackdropScale
+                }
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = chromeAlpha * backgroundAlpha.value))
+        )
+
         with(sharedTransitionScope) {
+            val baseImageModifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { coordinates ->
+                    imageBounds = coordinates.toImageBounds()
+                }
+
+            val imageModifier = if (requestedExitType == WallpaperExitType.SWIPE_TO_DISMISS) {
+                baseImageModifier
+            } else {
+                baseImageModifier
+                    .sharedElement(
+                        sharedContentState = rememberSharedContentState(key = "wallpaper-image-${wallpaper.id}"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        clipInOverlayDuringTransition = OverlayClip(transitionShape)
+                    )
+            }
+
             CurateWallpaperImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(wallpaper.fullUrl)
@@ -286,26 +414,18 @@ fun WallpaperDetailScreen(
                 fallbackColor = Color.Transparent,
                 fadeInImage = false,
                 onBitmapLoaded = { loadedBitmap = it },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .onGloballyPositioned { coordinates ->
-                        imageBounds = coordinates.toImageBounds()
-                    }
-                    .offset { IntOffset(x = 0, y = dragOffsetY.value.roundToInt()) }
-                    .sharedElement(
-                        sharedContentState = rememberSharedContentState(key = "wallpaper-image-${wallpaper.id}"),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        clipInOverlayDuringTransition = OverlayClip(transitionShape)
-                    )
-                    .graphicsLayer {
-                        scaleX = contentScale
-                        scaleY = contentScale
-                    }
+                modifier = imageModifier.graphicsLayer {
+                    translationX = offsetX.value
+                    translationY = offsetY.value
+                    rotationZ = rotation.value
+                    scaleX = scale.value
+                    scaleY = scale.value
+                }
             )
         }
 
         IconButton(
-            onClick = requestExit,
+            onClick = requestSharedElementExit,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .windowInsetsPadding(WindowInsets.statusBars)
@@ -490,7 +610,61 @@ private fun androidx.compose.ui.layout.LayoutCoordinates.toImageBounds(): ImageB
     )
 }
 
-private val DragDismissThreshold = 140.dp
-private const val DragDismissScaleRange = 0.08f
-private const val DragDismissBackgroundFade = 0.65f
+private suspend fun springBackDismissGesture(
+    offsetX: Animatable<Float, *>,
+    offsetY: Animatable<Float, *>,
+    rotation: Animatable<Float, *>,
+    scale: Animatable<Float, *>,
+    backgroundAlpha: Animatable<Float, *>
+) {
+    val snapSpec = spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMediumLow
+    )
+
+    kotlinx.coroutines.coroutineScope {
+        launch { offsetX.animateTo(0f, snapSpec) }
+        launch { offsetY.animateTo(0f, snapSpec) }
+        launch { rotation.animateTo(0f, snapSpec) }
+        launch { scale.animateTo(1f, snapSpec) }
+        launch { backgroundAlpha.animateTo(1f, snapSpec) }
+    }
+}
+
+private fun computeDismissTarget(
+    vx: Float,
+    vy: Float,
+    currentOffsetX: Float,
+    currentOffsetY: Float,
+    screenWidthPx: Float,
+    screenHeightPx: Float
+): Pair<Float, Float> {
+    val vectorX = if (abs(vx) > DragDismissVelocityAxisDeadZone) vx else currentOffsetX
+    val vectorY = if (abs(vy) > DragDismissVelocityAxisDeadZone) vy else currentOffsetY
+    val speed = sqrt(vectorX * vectorX + vectorY * vectorY)
+
+    val directionX = if (speed > 0f) vectorX / speed else DragDismissDefaultDirection
+    val directionY = if (speed > 0f) vectorY / speed else DragDismissDefaultDirection
+
+    return Pair(
+        first = directionX * screenWidthPx * DragDismissTargetScreenMultiplier,
+        second = directionY * screenHeightPx * DragDismissTargetScreenMultiplier
+    )
+}
+
+private val DragDismissFallbackThreshold = 140.dp
+private val DragDismissBackdropBlurRadius = 28.dp
+private const val DragDismissVelocityThreshold = 1000f
+private const val DragDismissVelocityAxisDeadZone = 100f
+private const val DragDismissOffsetThresholdRatio = 0.3f
+private const val DragDismissBackdropAlpha = 0.92f
+private const val DragDismissBackdropScale = 1.08f
+private const val DragDismissMaxRotationDegrees = 30f
+private const val DragDismissScaleRange = 0.15f
+private const val DragDismissBackgroundFadeMultiplier = 1.5f
+private const val DragDismissExitScale = 0.6f
+private const val DragDismissExitRotationMultiplier = 2f
+private const val DragDismissFlingAnimationMillis = 350
+private const val DragDismissTargetScreenMultiplier = 2f
+private const val DragDismissDefaultDirection = 0.707f
 private const val DetailExitChromeFadeMillis = 120
