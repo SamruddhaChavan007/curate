@@ -136,6 +136,8 @@ class SplashViewModelTest {
 
         override fun observeIsFavorite(wallpaperId: String): Flow<Boolean> = flowOf(false)
 
+        override fun observeFavorites(): Flow<List<Wallpaper>> = flowOf(emptyList())
+
         override suspend fun toggleFavorite(wallpaper: Wallpaper) = Unit
     }
 

@@ -21,5 +21,7 @@ interface WallpaperRepository {
 
     fun observeIsFavorite(wallpaperId: String): Flow<Boolean>
 
+    fun observeFavorites(): Flow<List<Wallpaper>>
+
     suspend fun toggleFavorite(wallpaper: Wallpaper)
 }

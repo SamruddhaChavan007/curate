@@ -5,6 +5,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.example.curate.data.error.AppErrorMapper
 import com.example.curate.data.local.dao.FavoriteWallpaperDao
+import com.example.curate.data.local.mapper.toDomain
 import com.example.curate.data.local.mapper.toEntity
 import com.example.curate.data.paging.WallpaperPagingSource
 import com.example.curate.data.remote.supabase.favorite.SupabaseFavoriteGateway
@@ -17,6 +18,7 @@ import com.example.curate.domain.repository.AuthRepository
 import com.example.curate.domain.repository.WallpaperRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -115,5 +117,12 @@ class WallpaperRepositoryImpl @Inject constructor(
         } catch (error: Exception) {
             Timber.e(error, "Unable to sync favorite wallpaper")
         }
+    }
+
+    override fun observeFavorites(): Flow<List<Wallpaper>> {
+        return favoriteWallpaperDao.getAllFavorites()
+            .map { entities ->
+                entities.map { it.toDomain() }
+            }
     }
 }

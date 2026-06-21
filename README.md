@@ -2,7 +2,7 @@
 
 Curate is an Android wallpaper discovery app built with Kotlin, Jetpack Compose, MVVM, Hilt, Paging 3, Coil, Ktor, Supabase, and Material 3 Expressive.
 
-The app currently covers wallpaper discovery, detail viewing, and user authentication:
+The app currently covers wallpaper discovery, detail viewing, user authentication, and favorites:
 
 - Unsplash-powered wallpaper discovery.
 - Infinite scrolling with Paging 3.
@@ -15,7 +15,10 @@ The app currently covers wallpaper discovery, detail viewing, and user authentic
 - Compose cinematic splash screen with bundled artwork and a timed transition into the app.
 - Email/password sign-in and sign-up backed by Supabase Auth, with session refresh and sign-out.
 - Auth state machine (`Loading → Authenticated / Unauthenticated / Error / ConfigUnavailable`) propagated app-wide via `AuthSessionViewModel`.
-- Library screen gated behind authentication, prompting sign-in when the user is unauthenticated.
+- Authenticated users can add or remove favorites from the wallpaper detail screen.
+- Favorites are persisted in Room, observed reactively, and mirrored to Supabase on add/remove.
+- The auth-gated Library displays favorites in a two-column staggered grid with empty and signed-out states.
+- Selecting a Library favorite opens its detail screen using the same shared-element transition as the feed and search grids.
 - Reusable presentation components for loading, empty/error states, wallpaper cards, search, auth top bar, and detail chrome.
 
 ## Tech Stack
@@ -28,7 +31,8 @@ The app currently covers wallpaper discovery, detail viewing, and user authentic
 | Networking | Ktor with OkHttp |
 | Images | Coil 3, BlurHash, AndroidX Palette |
 | Pagination | Paging 3 |
-| Backend services | Unsplash API, Supabase Kotlin (Auth) |
+| Local persistence | Room |
+| Backend services | Unsplash API, Supabase Kotlin (Auth and favorite mutations) |
 | Splash screen | Jetpack Compose |
 | Logging | Timber |
 
@@ -106,6 +110,7 @@ app/src/main/java/com/example/curate/
 |-- core/
 |   `-- config/
 |-- data/
+|   |-- local/
 |   |-- paging/
 |   |-- remote/
 |   |   |-- supabase/
@@ -163,6 +168,19 @@ Composables:
 
 `data/` contains repository implementations, remote clients, paging sources, DTOs, and mappers. DTOs should not leak into `domain` or `presentation`.
 
+Favorites use the local Room table as the reactive UI source. `WallpaperRepositoryImpl.observeFavorites()` maps DAO entities into domain models, while favorite mutations update Room and make a best-effort Supabase upsert or delete for the authenticated user.
+
+The Library data path is:
+
+```text
+FavoriteWallpaperDao
+    -> WallpaperRepository.observeFavorites()
+    -> ObserveFavoriteWallpapersUseCase
+    -> LibraryViewModel.uiState
+    -> LibraryRoute
+    -> LibraryScreen
+```
+
 ### DI
 
 `di/` contains Hilt modules for network clients, Supabase, and repository bindings.
@@ -183,6 +201,9 @@ Composables:
 - The bottom navigation uses icon brightness for selection, with no selected-item background indicator.
 - Auth screens share a reusable `AuthTopBar` component.
 - `AuthSessionViewModel` is scoped to the activity and drives auth-gated routes throughout the nav graph.
+- `LibraryViewModel` maps observed domain favorites into `LibraryUiState` and presentation-ready `WallpaperUiModel` values.
+- The Library renders an empty message until the authenticated user has favorites, then displays them in a two-column staggered grid.
+- Library cards reuse `WallpaperCard` and navigate to wallpaper details with the stable `wallpaper-image-${id}` shared-element key.
 
 ## Logging
 
@@ -204,7 +225,8 @@ Production behavior:
 Likely future areas:
 
 - Search and filter controls backed by Unsplash search parameters.
-- Favorites and collections synced with Supabase.
+- User-scoped local favorite storage and full cross-device favorite hydration from Supabase.
+- Collections synced with Supabase.
 - Wallpaper apply/download flows with Unsplash download tracking.
 - Discover screen content — currently a placeholder.
 - Additional top-level screens using the shared animation and component framework.

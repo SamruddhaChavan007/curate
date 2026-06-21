@@ -239,6 +239,8 @@ class SearchViewModelTest {
             return flowOf(false)
         }
 
+        override fun observeFavorites(): Flow<List<Wallpaper>> = flowOf(emptyList())
+
         override suspend fun toggleFavorite(wallpaper: Wallpaper) = Unit
     }
 

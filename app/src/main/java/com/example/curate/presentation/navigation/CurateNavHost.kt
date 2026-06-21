@@ -194,7 +194,17 @@ fun CurateNavHost(
                     }
 
                     entry<CurateNavKey.Library> {
-                        LibraryRoute(authState = authState)
+                        LibraryRoute(
+                            authState = authState,
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                            onWallpaperClick = { wallpaper ->
+                                navigationChromeViewModel.hideBottomBar()
+                                transitionSeedWallpaper = wallpaper
+                                lastWallpaperExitType = WallpaperExitType.SHARED_ELEMENT
+                                navigationState.push(CurateNavKey.WallpaperDetail(wallpaper.id))
+                            }
+                        )
                     }
 
                     entry<CurateNavKey.SignIn> { key ->
